@@ -24,7 +24,6 @@ public class Pet {
     @Column(nullable = false, length = 120)
     private String breed;      // Raza
 
-
     private int age;
     private Double weight;
 
