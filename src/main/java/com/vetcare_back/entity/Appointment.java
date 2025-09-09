@@ -8,12 +8,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "appointments",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uk_appointment_vet_start", columnNames = {"vet_id", "start_datetime"}),
+        @UniqueConstraint(name = "uk_appointment_assigned_start", columnNames = {"assigned_to_id", "start_datetime"}),
             @UniqueConstraint(name = "uk_appointment_pet_start", columnNames = {"pet_id", "start_datetime"}),
 
     },
     indexes = {
-        @Index(name = "idx_appointments_vet", columnList = "vet_id"),
+        @Index(name = "idx_appointments_assigned", columnList = "assigned_to_id"),
             @Index(name = "idx_appointments_pet", columnList = "pet_id"),
             @Index(name = "idx_appointments_start", columnList = "start_datetime"),
             @Index(name = "idx_appointments_status", columnList = "status")
@@ -42,8 +42,8 @@ public class Appointment {
     private User scheduledBy;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "vet_id")
-    private User vet;
+    @JoinColumn(name = "assigned_to_id")
+    private User assignedTo;
 
     @Column(name = "start_datetime")
     private LocalDateTime startDateTime;

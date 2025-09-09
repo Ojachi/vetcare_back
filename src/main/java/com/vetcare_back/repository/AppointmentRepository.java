@@ -6,13 +6,13 @@ import com.vetcare_back.entity.Pet;
 import com.vetcare_back.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AppointmentRepository extends JpaRepository<Appointment,Long> {
-    List <Appointment> findByVet(User vet);
+    List <Appointment> findByAssignedTo(User AssignedTo);
     List <Appointment> findByPet(Pet pet);
     List<Appointment> findByOwner(User owner);
     List<Appointment> findByStatus(AppointmentStatus status);
-    //List<Appointment> findByAppointmentDate(LocalDate date);
+    List<Appointment> findByStartDateTimeBetween(LocalDateTime start,LocalDateTime end);
 }
