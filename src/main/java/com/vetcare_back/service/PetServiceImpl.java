@@ -34,12 +34,12 @@ public class PetServiceImpl implements IPetService{
         User currentUser = userRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new UserNotFoundExeption("Current user is not found."));
         User owner;
-        if(hasRole("USER")){
+        if(hasRole("OWNER")){
             if(dto.getOwnerId() != null && !dto.getOwnerId().equals(currentUser.getId())){
                throw new SecurityException("Users can only register their own pets");
             }
             owner = currentUser;
-        } else if(hasRole("EMPLOYEE") || hasRole("ADMIN")){
+        } else if(hasRole("EMPLOYEE") || hasRole("ADMIN") || hasRole("VETERINARIAN")){
             if(dto.getOwnerId() == null){
                 throw new SecurityException("Owner id is required for staff");
             }

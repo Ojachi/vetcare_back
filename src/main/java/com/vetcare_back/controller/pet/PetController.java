@@ -4,6 +4,7 @@ import com.vetcare_back.dto.pet.PetDTO;
 import com.vetcare_back.dto.pet.PetResponseDTO;
 import com.vetcare_back.service.IPetService;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +20,7 @@ public class PetController {
         this.petService = petService;
     }
 
-    @PostMapping
+    @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PetResponseDTO> create(@Valid @RequestBody PetDTO dto) {
         return ResponseEntity.ok(petService.create(dto));
     }
