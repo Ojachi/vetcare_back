@@ -99,7 +99,7 @@ public class PetServiceImpl implements IPetService{
                 .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
 
         List<Pet> pets;
-        if (hasRole("USER")) {
+        if (hasRole("OWNER")) {
             pets = petRepository.findByOwner(currentUser);
         } else if (hasRole("EMPLOYEE") || hasRole("VETERINARIAN") || hasRole("ADMIN")) {
             pets = petRepository.findAll();

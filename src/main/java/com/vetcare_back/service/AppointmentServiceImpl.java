@@ -60,9 +60,9 @@ public class AppointmentServiceImpl implements IAppointmentService {
         }
 
         // Validar permisos para crear
-        if (hasRole("USER") && !pet.getOwner().getId().equals(currentUser.getId())) {
-            throw new SecurityException("Users can only create appointments for their own pets");
-        } else if (!hasRole("EMPLOYEE") && !hasRole("ADMIN")) {
+        if (hasRole(currentUser,"OWNER") && !pet.getOwner().getId().equals(currentUser.getId())) {
+            throw new SecurityException("Owners can only create appointments for their own pets");
+        } else if (!hasRole(currentUser, "OWNER") && !hasRole(currentUser, "EMPLOYEE") && !hasRole(currentUser, "ADMIN")) {
             throw new SecurityException("Unauthorized to create appointments");
         }
 
@@ -164,7 +164,7 @@ public class AppointmentServiceImpl implements IAppointmentService {
                 .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
 
         List<Appointment> appointments;
-        if (hasRole("USER")) {
+        if (hasRole("OWNER")) {
             appointments = appointmentRepository.findByOwner(currentUser);
         } else if (hasRole("EMPLOYEE") || hasRole("VETERINARIAN")) {
             appointments = appointmentRepository.findByAssignedTo(currentUser);
