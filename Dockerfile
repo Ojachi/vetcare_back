@@ -1,14 +1,13 @@
-# Usa imagen base oficial de OpenJDK
-FROM eclipse-temurin:21-jdk-jammy
-
-# Define carpeta de trabajo en contenedor
+# Etapa de build
+FROM maven:3.8.5-openjdk-21 as build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copia el archivo JAR generado en el build local
-COPY target/vetcare_back-0.0.1-SNAPSHOT.jar app.jar
-
-# Expone puerto 8080 (o el que uses)
+# Etapa de runtime
+FROM eclipse-temurin:21-jdk-jammy
+WORKDIR /app
+COPY --from=build /app/target/vetcare_back-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
-
-# Comando para ejecución
 ENTRYPOINT ["java", "-jar", "app.jar"]
