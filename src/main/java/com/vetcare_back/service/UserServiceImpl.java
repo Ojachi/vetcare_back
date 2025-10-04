@@ -70,6 +70,10 @@ public class UserServiceImpl implements IUserService {
         if(!hasRole("ADMIN")) throw new SecurityException("Only admins can change roles");
         User user = userRepository.findById(dto.getId())
                 .orElseThrow(()-> new UserNotFoundExeption("User not found"));
+        String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        if(user.getEmail().equals(currentUserEmail)){
+            throw new SecurityException("Admins cannot change their own role");
+        }
         userMapper.updateRole(dto, user);
         userRepository.save(user);
     }
