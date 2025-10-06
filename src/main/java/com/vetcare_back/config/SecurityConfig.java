@@ -1,6 +1,5 @@
 package com.vetcare_back.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,18 +24,35 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
+                        // Endpoints públicos de autenticación y registro
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/logout").permitAll()
+
+                        // Endpoints públicos de recuperación de contraseña
+                        .requestMatchers("/api/auth/forgot-password").permitAll()
+                        .requestMatchers("/api/auth/verify-otp").permitAll()
+                        .requestMatchers("/api/auth/reset-password").permitAll()
+
+                        // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // User endpoints
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/api/pets/**").authenticated()
                         .requestMatchers("/api/appointments/**").authenticated()
+                        .requestMatchers("/api/diagnoses/**").authenticated()
+
+                        // Services - público para consultar
                         .requestMatchers("/api/services/**").permitAll()
+
+                        // Swagger/OpenAPI
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
