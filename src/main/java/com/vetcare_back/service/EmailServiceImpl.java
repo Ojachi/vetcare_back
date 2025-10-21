@@ -1,34 +1,59 @@
 package com.vetcare_back.service;
 
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 
 @Service
 public class EmailServiceImpl implements IEmailService {
 
-    private final JavaMailSender mailSender;
+    @Value("${sendgrid.api.key}")
+    private String sendGridApiKey;
 
-    @Value("${spring.mail.username:noreply@vetcare.com}")
+    @Value("${sendgrid.from.email}")
     private String fromEmail;
 
-    public EmailServiceImpl(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
+    @Value("${sendgrid.from.name}")
+    private String fromName;
 
     @Override
     public void sendOtpEmail(String to, String otp, String userName) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(to);
-            message.setSubject("VetCare - Código de Recuperación de Contraseña");
-            message.setText(buildOtpEmailBody(otp, userName));
+            Email from = new Email(fromEmail, fromName);
+            Email toEmail = new Email(to);
+            String subject = "VetCare - Código de Recuperación de Contraseña";
+            Content content = new Content("text/plain", buildOtpEmailBody(otp, userName));
 
-            mailSender.send(message);
-        } catch (Exception e) {
+            Mail mail = new Mail(from, subject, toEmail, content);
+
+            SendGrid sg = new SendGrid(sendGridApiKey);
+            Request request = new Request();
+
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sg.api(request);
+
+            if (response.getStatusCode() >= 400) {
+                System.err.println("SendGrid error: " + response.getStatusCode());
+                System.err.println("Response body: " + response.getBody());
+                throw new RuntimeException("Failed to send email via SendGrid");
+            }
+
+            System.out.println("OTP email sent successfully to: " + to);
+
+        } catch (IOException e) {
             System.err.println("Error sending OTP email: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to send email. Please try again later.");
         }
     }
@@ -36,14 +61,30 @@ public class EmailServiceImpl implements IEmailService {
     @Override
     public void sendPasswordChangedConfirmation(String to, String userName) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(to);
-            message.setSubject("VetCare - Contraseña Cambiada Exitosamente");
-            message.setText(buildPasswordChangedBody(userName));
+            Email from = new Email(fromEmail, fromName);
+            Email toEmail = new Email(to);
+            String subject = "VetCare - Contraseña Cambiada Exitosamente";
+            Content content = new Content("text/plain", buildPasswordChangedBody(userName));
 
-            mailSender.send(message);
-        } catch (Exception e) {
+            Mail mail = new Mail(from, subject, toEmail, content);
+
+            SendGrid sg = new SendGrid(sendGridApiKey);
+            Request request = new Request();
+
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sg.api(request);
+
+            if (response.getStatusCode() >= 400) {
+                System.err.println("SendGrid error: " + response.getStatusCode());
+                // No lanzamos excepción porque la contraseña ya se cambió
+            } else {
+                System.out.println("Confirmation email sent successfully to: " + to);
+            }
+
+        } catch (IOException e) {
             System.err.println("Error sending confirmation email: " + e.getMessage());
             // No lanzamos excepción aquí porque la contraseña ya se cambió
         }
