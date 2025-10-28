@@ -46,6 +46,10 @@ public class SecurityConfig {
                         // Services - público para consultar
                         .requestMatchers("/api/services/**").permitAll()
 
+                        //Products
+                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
+                        .requestMatchers("/api/products/**").hasRole("ADMIN")
+
                         // Swagger/OpenAPI
                         .requestMatchers(
                                 "/v3/api-docs/**",
