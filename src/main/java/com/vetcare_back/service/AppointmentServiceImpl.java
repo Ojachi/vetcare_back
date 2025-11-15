@@ -17,7 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -199,8 +198,6 @@ public class AppointmentServiceImpl implements IAppointmentService {
 
         List<Appointment> appointments = appointmentRepository.findAll();
         if (ownerId != null) {
-            User owner = userRepository.findById(ownerId)
-                    .orElseThrow(() -> new UserNotFoundExeption("Owner not found"));
             appointments = appointments.stream()
                     .filter(a -> a.getOwner().getId().equals(ownerId))
                     .collect(Collectors.toList());
@@ -237,7 +234,7 @@ public class AppointmentServiceImpl implements IAppointmentService {
         if (allowAssigned && hasRole("VETERINARIAN") && appointment.getAssignedTo().getId().equals(currentUser.getId())) {
             return true;
         }
-        return appointment.getOwner().getId().equals(currentUser.getId());
+        return hasRole("OWNER") && appointment.getOwner().getId().equals(currentUser.getId());
     }
 
     private boolean hasRole(User user, String roleName) {
@@ -253,14 +250,11 @@ public class AppointmentServiceImpl implements IAppointmentService {
     }
 
     private boolean isValidStatusTransition(AppointmentStatus current, AppointmentStatus next) {
-        switch (current) {
-            case PENDING:
-                return next == AppointmentStatus.ACCEPTED || next == AppointmentStatus.CANCELLED;
-            case ACCEPTED:
-                return next == AppointmentStatus.COMPLETED || next == AppointmentStatus.CANCELLED;
-            default:
-                return false;
-        }
+        return switch (current) {
+            case PENDING -> next == AppointmentStatus.ACCEPTED || next == AppointmentStatus.CANCELLED;
+            case ACCEPTED -> next == AppointmentStatus.COMPLETED || next == AppointmentStatus.CANCELLED;
+            default -> false;
+        };
     }
 
     @Override
@@ -268,40 +262,62 @@ public class AppointmentServiceImpl implements IAppointmentService {
         Services service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new EntityNotFoundException("Service not found"));
 
-        List<Role> allowedRoles = service.getRequiresVeterinarian() 
-                ? Arrays.asList(Role.VETERINARIAN) 
-                : Arrays.asList(Role.VETERINARIAN, Role.EMPLOYEE);
-
+        List<Role> allowedRoles = getAllowedRolesForService(service);
         List<User> professionals = userRepository.findByRoleInAndActiveTrue(allowedRoles);
 
         return professionals.stream()
                 .map(prof -> {
-                    boolean available = !appointmentRepository.existsByAssignedToAndStartDateTime(prof, dateTime);
-                    String nextSlot = available ? null : findNextAvailableSlot(prof, dateTime);
+                    boolean available = !hasOverlappingAppointment(prof, dateTime, service.getDurationMinutes(), null);
+                    String nextSlot = available ? null : findNextAvailableSlot(prof, dateTime, service.getDurationMinutes());
                     return new AvailableProfessionalDTO(userMapper.toResponseDTO(prof), available, nextSlot);
                 })
                 .collect(Collectors.toList());
     }
 
     private void validateProfessional(User professional, Services service, LocalDateTime dateTime) {
-        if (!professional.getActive()) {
-            throw new IllegalArgumentException("Professional is not active");
-        }
-
-        if (!hasRole(professional, "EMPLOYEE") && !hasRole(professional, "VETERINARIAN")) {
-            throw new IllegalArgumentException("Assigned user must have EMPLOYEE or VETERINARIAN role");
-        }
-
-        if (service.getRequiresVeterinarian() && !hasRole(professional, "VETERINARIAN")) {
-            throw new IllegalArgumentException("This service requires a veterinarian");
-        }
-
-        if (appointmentRepository.existsByAssignedToAndStartDateTime(professional, dateTime)) {
+        validateProfessionalRole(professional, service);
+        
+        if (hasOverlappingAppointment(professional, dateTime, service.getDurationMinutes(), null)) {
             throw new IllegalStateException("Professional is not available at this time");
         }
     }
 
     private void validateProfessionalForUpdate(User professional, Services service, LocalDateTime dateTime, Long appointmentId) {
+        validateProfessionalRole(professional, service);
+        
+        if (hasOverlappingAppointment(professional, dateTime, service.getDurationMinutes(), appointmentId)) {
+            throw new IllegalStateException("Professional is not available at this time");
+        }
+    }
+
+    private User findAvailableProfessional(Services service, LocalDateTime dateTime) {
+        List<Role> allowedRoles = getAllowedRolesForService(service);
+        List<User> professionals = userRepository.findByRoleInAndActiveTrue(allowedRoles);
+
+        return professionals.stream()
+                .filter(prof -> !hasOverlappingAppointment(prof, dateTime, service.getDurationMinutes(), null))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No professionals available at this time"));
+    }
+
+    private String findNextAvailableSlot(User professional, LocalDateTime fromDateTime, Integer durationMinutes) {
+        LocalDateTime checkTime = fromDateTime.plusMinutes(30);
+        for (int i = 0; i < 20; i++) {
+            if (!hasOverlappingAppointment(professional, checkTime, durationMinutes, null)) {
+                return checkTime.toString();
+            }
+            checkTime = checkTime.plusMinutes(30);
+        }
+        return null;
+    }
+
+    private List<Role> getAllowedRolesForService(Services service) {
+        return service.getRequiresVeterinarian() 
+                ? List.of(Role.VETERINARIAN) 
+                : List.of(Role.VETERINARIAN, Role.EMPLOYEE);
+    }
+
+    private void validateProfessionalRole(User professional, Services service) {
         if (!professional.getActive()) {
             throw new IllegalArgumentException("Professional is not active");
         }
@@ -313,38 +329,25 @@ public class AppointmentServiceImpl implements IAppointmentService {
         if (service.getRequiresVeterinarian() && !hasRole(professional, "VETERINARIAN")) {
             throw new IllegalArgumentException("This service requires a veterinarian");
         }
+    }
 
-        // Verificar disponibilidad excluyendo la cita actual
-        List<Appointment> conflicts = appointmentRepository.findByAssignedToAndStartDateTime(professional, dateTime);
-        boolean hasConflict = conflicts.stream()
-                .anyMatch(a -> !a.getId().equals(appointmentId));
+    private boolean hasOverlappingAppointment(User professional, LocalDateTime startDateTime, Integer durationMinutes, Long excludeAppointmentId) {
+        LocalDateTime endDateTime = startDateTime.plusMinutes(durationMinutes);
         
-        if (hasConflict) {
-            throw new IllegalStateException("Professional is not available at this time");
-        }
-    }
+        List<Appointment> overlappingAppointments = appointmentRepository
+                .findByAssignedToAndStartDateTimeBetweenAndStatusNot(
+                        professional, 
+                        startDateTime.minusMinutes(120), // Buffer para citas que puedan solaparse
+                        endDateTime, 
+                        AppointmentStatus.CANCELLED
+                );
 
-    private User findAvailableProfessional(Services service, LocalDateTime dateTime) {
-        List<Role> allowedRoles = service.getRequiresVeterinarian() 
-                ? Arrays.asList(Role.VETERINARIAN) 
-                : Arrays.asList(Role.VETERINARIAN, Role.EMPLOYEE);
-
-        List<User> professionals = userRepository.findByRoleInAndActiveTrue(allowedRoles);
-
-        return professionals.stream()
-                .filter(prof -> !appointmentRepository.existsByAssignedToAndStartDateTime(prof, dateTime))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No professionals available at this time"));
-    }
-
-    private String findNextAvailableSlot(User professional, LocalDateTime fromDateTime) {
-        LocalDateTime checkTime = fromDateTime.plusMinutes(30);
-        for (int i = 0; i < 20; i++) {
-            if (!appointmentRepository.existsByAssignedToAndStartDateTime(professional, checkTime)) {
-                return checkTime.toString();
-            }
-            checkTime = checkTime.plusMinutes(30);
-        }
-        return null;
+        return overlappingAppointments.stream()
+                .filter(apt -> excludeAppointmentId == null || !apt.getId().equals(excludeAppointmentId))
+                .anyMatch(apt -> {
+                    LocalDateTime existingEnd = apt.getStartDateTime().plusMinutes(apt.getService().getDurationMinutes());
+                    // Hay solapamiento si: nuevaStart < existingEnd AND nuevaEnd > existingStart
+                    return startDateTime.isBefore(existingEnd) && endDateTime.isAfter(apt.getStartDateTime());
+                });
     }
 }
