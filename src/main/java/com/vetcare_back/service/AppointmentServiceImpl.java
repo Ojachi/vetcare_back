@@ -192,8 +192,8 @@ public class AppointmentServiceImpl implements IAppointmentService {
 
     @Override
     public List<AppointmentResponseDTO> listByFilters(Long ownerId, Long petId, Long serviceId, Long assignedToId, LocalDateTime startDate, LocalDateTime endDate) {
-        if (!hasRole("ADMIN")) {
-            throw new SecurityException("Only admins can filter appointments");
+        if (!hasRole("ADMIN") && !hasRole("EMPLOYEE")) {
+            throw new SecurityException("Only admins and employees can filter appointments");
         }
 
         List<Appointment> appointments = appointmentRepository.findAll();
