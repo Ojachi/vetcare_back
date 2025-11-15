@@ -79,14 +79,54 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public void deactivate(DeactivateUserDTO dto) {
-        if(!hasRole("ADMIN")) throw new SecurityException("Only admins can deactivate users");
+    public void activate(ActivateUserDTO dto) {
+        // Solo ADMIN puede activar usuarios
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can activate users");
+        }
+
         User user = userRepository.findById(dto.getId())
-                .orElseThrow(()-> new UserNotFoundExeption("User not found"));
-        userMapper.deactivateUser(dto,user);
+                .orElseThrow(() -> new UserNotFoundExeption("User not found"));
+
+        // Verificar que el usuario esté desactivado
+        if (user.getActive()) {
+            throw new IllegalStateException("User is already active");
+        }
+
+        // No permitir que un admin se active a sí mismo si fue desactivado
+        String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (user.getEmail().equals(currentUserEmail)) {
+            throw new SecurityException("Admins cannot activate themselves");
+        }
+
+        // Activar el usuario usando el mapper existente
+        userMapper.activateUser(dto, user);
         userRepository.save(user);
     }
+    @Override
+    public void deactivate(DeactivateUserDTO dto) {
+        if(!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can deactivate users");
+        }
 
+        User user = userRepository.findById(dto.getId())
+                .orElseThrow(() -> new UserNotFoundExeption("User not found"));
+
+        // Evitar que un admin se desactive a sí mismo
+        String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        if(user.getEmail().equals(currentUserEmail)){
+            throw new SecurityException("Admins cannot deactivate themselves");
+        }
+
+        // Verificar que el usuario no esté ya desactivado
+        if (!user.getActive()) {
+            throw new IllegalStateException("User is already deactivated");
+        }
+
+        userMapper.deactivateUser(dto, user);
+        userRepository.save(user);
+    }
+    
     @Override
     public UserResponseDTO getById(Long id) {
         User user = userRepository.findById(id)

@@ -1,5 +1,6 @@
 package com.vetcare_back.controller.user;
 
+import com.vetcare_back.dto.user.ActivateUserDTO;
 import com.vetcare_back.dto.user.ChangeRoleDTO;
 import com.vetcare_back.dto.user.DeactivateUserDTO;
 import com.vetcare_back.dto.user.UserResponseDTO;
@@ -23,6 +24,12 @@ public class AdminController {
     public ResponseEntity<String> changeRole(@Valid @RequestBody ChangeRoleDTO dto){
         userService.changeRole(dto);
         return ResponseEntity.ok("Role changed");
+    }
+
+    @PutMapping("/users/activate")
+    public ResponseEntity<String> activateUser(@Valid @RequestBody ActivateUserDTO dto) {
+        userService.activate(dto);
+        return ResponseEntity.ok("User activated successfully");
     }
 
     @PutMapping("/users/deactivate")

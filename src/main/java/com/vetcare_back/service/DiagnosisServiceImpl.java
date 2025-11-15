@@ -126,7 +126,7 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
                 .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
 
         List<Diagnosis> diagnoses;
-        if (hasRole(currentUser, "USER")) {
+        if (hasRole(currentUser, "OWNER")) {
             diagnoses = diagnosisRepository.findAll().stream()
                     .filter(d -> d.getAppointment().getOwner().getId().equals(currentUser.getId()))
                     .collect(Collectors.toList());

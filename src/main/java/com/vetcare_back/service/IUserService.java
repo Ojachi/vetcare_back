@@ -11,6 +11,7 @@ public interface IUserService {
     UserResponseDTO update(Long id, UserUpdateDTO dto);
     void delete(Long id);
     void changeRole(ChangeRoleDTO dto);
+    void activate(ActivateUserDTO dto);
     void deactivate(DeactivateUserDTO dto);
     UserResponseDTO getById(Long id);
     UserResponseDTO getByEmail(String email);
