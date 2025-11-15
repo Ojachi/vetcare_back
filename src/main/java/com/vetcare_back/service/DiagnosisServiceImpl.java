@@ -5,11 +5,13 @@ import com.vetcare_back.dto.diagnosis.DiagnosisResponseDTO;
 import com.vetcare_back.entity.Appointment;
 import com.vetcare_back.entity.AppointmentStatus;
 import com.vetcare_back.entity.Diagnosis;
+import com.vetcare_back.entity.Pet;
 import com.vetcare_back.entity.User;
 import com.vetcare_back.exception.UserNotFoundExeption;
 import com.vetcare_back.mapper.DiagnosisMapper;
 import com.vetcare_back.repository.AppointmentRepository;
 import com.vetcare_back.repository.DiagnosisRepository;
+import com.vetcare_back.repository.PetRepository;
 import com.vetcare_back.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,13 +28,15 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
     private final DiagnosisMapper diagnosisMapper;
+    private final PetRepository petRepository;
 
     public DiagnosisServiceImpl(DiagnosisRepository diagnosisRepository, AppointmentRepository appointmentRepository,
-                                UserRepository userRepository, DiagnosisMapper diagnosisMapper) {
+                                UserRepository userRepository, DiagnosisMapper diagnosisMapper, PetRepository petRepository) {
         this.diagnosisRepository = diagnosisRepository;
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
         this.diagnosisMapper = diagnosisMapper;
+        this.petRepository = petRepository;
     }
 
     @Override
@@ -130,9 +134,7 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
             diagnoses = diagnosisRepository.findAll().stream()
                     .filter(d -> d.getAppointment().getOwner().getId().equals(currentUser.getId()))
                     .collect(Collectors.toList());
-        } else if (hasRole(currentUser, "VETERINARIAN")) {
-            diagnoses = diagnosisRepository.findByVet(currentUser);
-        } else if (hasRole(currentUser, "EMPLOYEE") || hasRole(currentUser, "ADMIN")) {
+        } else if (hasRole(currentUser, "VETERINARIAN") || hasRole(currentUser, "EMPLOYEE") || hasRole(currentUser, "ADMIN")) {
             diagnoses = diagnosisRepository.findAll();
         } else {
             throw new SecurityException("Unauthorized to list diagnoses");
@@ -169,18 +171,50 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
         return diagnoses.stream().map(diagnosisMapper::toResponseDTO).collect(Collectors.toList());
     }
 
+    @Override
+    public List<DiagnosisResponseDTO> listMyDiagnoses() {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
+
+        if (!hasRole(currentUser, "VETERINARIAN")) {
+            throw new SecurityException("Only veterinarians can access this endpoint");
+        }
+
+        return diagnosisRepository.findByVet(currentUser).stream()
+                .map(diagnosisMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     private boolean canAccessDiagnosis(Diagnosis diagnosis) {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
 
-        if (hasRole(currentUser, "EMPLOYEE") || hasRole(currentUser, "ADMIN")) {
-            return true;
-        }
-        if (hasRole(currentUser, "VETERINARIAN") && diagnosis.getVet().getId().equals(currentUser.getId())) {
+        if (hasRole(currentUser, "VETERINARIAN") || hasRole(currentUser, "EMPLOYEE") || hasRole(currentUser, "ADMIN")) {
             return true;
         }
         return diagnosis.getAppointment().getOwner().getId().equals(currentUser.getId());
+    }
+
+    @Override
+    public List<DiagnosisResponseDTO> listByPet(Long petId) {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
+
+        Pet pet = petRepository.findById(petId)
+                .orElseThrow(() -> new EntityNotFoundException("Pet not found"));
+
+        if (hasRole(currentUser, "OWNER") && !pet.getOwner().getId().equals(currentUser.getId())) {
+            throw new SecurityException("You don't have permission to view diagnoses for this pet");
+        }
+
+        return diagnosisRepository.findByAppointment_Pet_Id(petId).stream()
+                .filter(Diagnosis::getActive)
+                .sorted((d1, d2) -> d2.getDate().compareTo(d1.getDate()))
+                .map(diagnosisMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     private boolean hasRole(User user, String roleName) {

@@ -14,4 +14,6 @@ public interface IDiagnosisService {
     DiagnosisResponseDTO getById(Long id);
     List<DiagnosisResponseDTO> listAll();
     List<DiagnosisResponseDTO> listByFilters(Long petId, Long vetId, LocalDate startDate, LocalDate endDate);
+    List<DiagnosisResponseDTO> listByPet(Long petId);
+    List<DiagnosisResponseDTO> listMyDiagnoses();
 }

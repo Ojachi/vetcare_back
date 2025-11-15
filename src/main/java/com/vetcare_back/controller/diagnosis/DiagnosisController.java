@@ -56,4 +56,14 @@ public class DiagnosisController {
         LocalDate end = endDate != null ? LocalDate.parse(endDate) : null;
         return ResponseEntity.ok(diagnosisService.listByFilters(petId, vetId, start, end));
     }
+
+    @GetMapping("/pet/{petId}")
+    public ResponseEntity<List<DiagnosisResponseDTO>> getByPetId(@PathVariable Long petId) {
+        return ResponseEntity.ok(diagnosisService.listByPet(petId));
+    }
+
+    @GetMapping("/my-diagnoses")
+    public ResponseEntity<List<DiagnosisResponseDTO>> getMyDiagnoses() {
+        return ResponseEntity.ok(diagnosisService.listMyDiagnoses());
+    }
 }

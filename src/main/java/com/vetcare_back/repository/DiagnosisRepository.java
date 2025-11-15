@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface DiagnosisRepository  extends JpaRepository<Diagnosis,Long> {
     Optional<Diagnosis> findByAppointment(Appointment appointment);
     List<Diagnosis> findByVet(User vet);
+    List<Diagnosis> findByAppointment_Pet_Id(Long petId);
 }
