@@ -65,4 +65,12 @@ public class AppointmentController {
         LocalDateTime end = endDate != null ? LocalDateTime.parse(endDate) : null;
         return ResponseEntity.ok(appointmentService.listByFilters(ownerId, petId, serviceId, assignedToId, start, end));
     }
+
+    @GetMapping("/available-professionals")
+    public ResponseEntity<List<com.vetcare_back.dto.appointment.AvailableProfessionalDTO>> getAvailableProfessionals(
+            @RequestParam Long serviceId,
+            @RequestParam String dateTime) {
+        LocalDateTime parsedDateTime = LocalDateTime.parse(dateTime);
+        return ResponseEntity.ok(appointmentService.getAvailableProfessionals(serviceId, parsedDateTime));
+    }
 }

@@ -15,4 +15,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment,Long> {
     List<Appointment> findByOwner(User owner);
     List<Appointment> findByStatus(AppointmentStatus status);
     List<Appointment> findByStartDateTimeBetween(LocalDateTime start,LocalDateTime end);
+    List<Appointment> findByAssignedToAndStartDateTimeBetween(User assignedTo, LocalDateTime start, LocalDateTime end);
+    boolean existsByAssignedToAndStartDateTime(User assignedTo, LocalDateTime startDateTime);
+    List<Appointment> findByAssignedToAndStartDateTime(User assignedTo, LocalDateTime startDateTime);
 }

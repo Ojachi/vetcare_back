@@ -15,8 +15,7 @@ public class AppointmentDTO {
     @NotNull(message = "Service ID is required")
     private Long serviceId;
 
-    @NotNull(message = "Assigned to ID is required")
-    private Long assignedToId;
+    private Long assignedToId; // Optional: if null, system will auto-assign
 
     @NotNull(message = "Start date and time is required")
     @Future(message = "Start date and time must be in the futuer")

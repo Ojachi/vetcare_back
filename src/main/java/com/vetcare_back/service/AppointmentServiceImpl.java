@@ -2,14 +2,12 @@ package com.vetcare_back.service;
 
 import com.vetcare_back.dto.appointment.AppointmentDTO;
 import com.vetcare_back.dto.appointment.AppointmentResponseDTO;
+import com.vetcare_back.dto.appointment.AvailableProfessionalDTO;
 import com.vetcare_back.dto.appointment.ChangeAppointmentStatusDTO;
-import com.vetcare_back.entity.Appointment;
-import com.vetcare_back.entity.AppointmentStatus;
-import com.vetcare_back.entity.Pet;
-import com.vetcare_back.entity.Services;
-import com.vetcare_back.entity.User;
+import com.vetcare_back.entity.*;
 import com.vetcare_back.exception.UserNotFoundExeption;
 import com.vetcare_back.mapper.AppointmentMapper;
+import com.vetcare_back.mapper.UserMapper;
 import com.vetcare_back.repository.AppointmentRepository;
 import com.vetcare_back.repository.PetRepository;
 import com.vetcare_back.repository.ServiceRepository;
@@ -19,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,15 +29,17 @@ public class AppointmentServiceImpl implements IAppointmentService {
     private final ServiceRepository serviceRepository;
     private final UserRepository userRepository;
     private final AppointmentMapper appointmentMapper;
+    private final UserMapper userMapper;
 
     public AppointmentServiceImpl(AppointmentRepository appointmentRepository, PetRepository petRepository,
                                   ServiceRepository serviceRepository, UserRepository userRepository,
-                                  AppointmentMapper appointmentMapper) {
+                                  AppointmentMapper appointmentMapper, UserMapper userMapper) {
         this.appointmentRepository = appointmentRepository;
         this.petRepository = petRepository;
         this.serviceRepository = serviceRepository;
         this.userRepository = userRepository;
         this.appointmentMapper = appointmentMapper;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -51,12 +52,9 @@ public class AppointmentServiceImpl implements IAppointmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Pet not found"));
         Services service = serviceRepository.findById(dto.getServiceId())
                 .orElseThrow(() -> new EntityNotFoundException("Service not found"));
-        User assignedTo = userRepository.findById(dto.getAssignedToId())
-                .orElseThrow(() -> new UserNotFoundExeption("Assigned user not found"));
 
-        // Validar que assignedTo sea empleado o veterinario
-        if (!hasRole(assignedTo, "EMPLOYEE") && !hasRole(assignedTo, "VETERINARIAN")) {
-            throw new IllegalArgumentException("Assigned user must have EMPLOYEE or VETERINARIAN role");
+        if (!service.isActive()) {
+            throw new IllegalStateException("Service is not active");
         }
 
         // Validar permisos para crear
@@ -64,6 +62,16 @@ public class AppointmentServiceImpl implements IAppointmentService {
             throw new SecurityException("Owners can only create appointments for their own pets");
         } else if (!hasRole(currentUser, "OWNER") && !hasRole(currentUser, "EMPLOYEE") && !hasRole(currentUser, "ADMIN")) {
             throw new SecurityException("Unauthorized to create appointments");
+        }
+
+        // Asignación de profesional (manual o automática)
+        User assignedTo;
+        if (dto.getAssignedToId() != null) {
+            assignedTo = userRepository.findById(dto.getAssignedToId())
+                    .orElseThrow(() -> new UserNotFoundExeption("Assigned user not found"));
+            validateProfessional(assignedTo, service, dto.getStartDateTime());
+        } else {
+            assignedTo = findAvailableProfessional(service, dto.getStartDateTime());
         }
 
         Appointment appointment = appointmentMapper.toEntity(dto);
@@ -91,11 +99,18 @@ public class AppointmentServiceImpl implements IAppointmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Pet not found"));
         Services service = serviceRepository.findById(dto.getServiceId())
                 .orElseThrow(() -> new EntityNotFoundException("Service not found"));
-        User assignedTo = userRepository.findById(dto.getAssignedToId())
-                .orElseThrow(() -> new UserNotFoundExeption("Assigned user not found"));
 
-        if (!hasRole(assignedTo, "EMPLOYEE") && !hasRole(assignedTo, "VETERINARIAN")) {
-            throw new IllegalArgumentException("Assigned user must have EMPLOYEE or VETERINARIAN role");
+        User assignedTo;
+        if (dto.getAssignedToId() != null) {
+            assignedTo = userRepository.findById(dto.getAssignedToId())
+                    .orElseThrow(() -> new UserNotFoundExeption("Assigned user not found"));
+            validateProfessionalForUpdate(assignedTo, service, dto.getStartDateTime(), id);
+        } else {
+            assignedTo = appointment.getAssignedTo();
+            // Validar disponibilidad si cambia la fecha
+            if (!dto.getStartDateTime().equals(appointment.getStartDateTime())) {
+                validateProfessionalForUpdate(assignedTo, service, dto.getStartDateTime(), id);
+            }
         }
 
         appointmentMapper.updateEntity(dto, appointment);
@@ -246,5 +261,90 @@ public class AppointmentServiceImpl implements IAppointmentService {
             default:
                 return false;
         }
+    }
+
+    @Override
+    public List<AvailableProfessionalDTO> getAvailableProfessionals(Long serviceId, LocalDateTime dateTime) {
+        Services service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new EntityNotFoundException("Service not found"));
+
+        List<Role> allowedRoles = service.getRequiresVeterinarian() 
+                ? Arrays.asList(Role.VETERINARIAN) 
+                : Arrays.asList(Role.VETERINARIAN, Role.EMPLOYEE);
+
+        List<User> professionals = userRepository.findByRoleInAndActiveTrue(allowedRoles);
+
+        return professionals.stream()
+                .map(prof -> {
+                    boolean available = !appointmentRepository.existsByAssignedToAndStartDateTime(prof, dateTime);
+                    String nextSlot = available ? null : findNextAvailableSlot(prof, dateTime);
+                    return new AvailableProfessionalDTO(userMapper.toResponseDTO(prof), available, nextSlot);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private void validateProfessional(User professional, Services service, LocalDateTime dateTime) {
+        if (!professional.getActive()) {
+            throw new IllegalArgumentException("Professional is not active");
+        }
+
+        if (!hasRole(professional, "EMPLOYEE") && !hasRole(professional, "VETERINARIAN")) {
+            throw new IllegalArgumentException("Assigned user must have EMPLOYEE or VETERINARIAN role");
+        }
+
+        if (service.getRequiresVeterinarian() && !hasRole(professional, "VETERINARIAN")) {
+            throw new IllegalArgumentException("This service requires a veterinarian");
+        }
+
+        if (appointmentRepository.existsByAssignedToAndStartDateTime(professional, dateTime)) {
+            throw new IllegalStateException("Professional is not available at this time");
+        }
+    }
+
+    private void validateProfessionalForUpdate(User professional, Services service, LocalDateTime dateTime, Long appointmentId) {
+        if (!professional.getActive()) {
+            throw new IllegalArgumentException("Professional is not active");
+        }
+
+        if (!hasRole(professional, "EMPLOYEE") && !hasRole(professional, "VETERINARIAN")) {
+            throw new IllegalArgumentException("Assigned user must have EMPLOYEE or VETERINARIAN role");
+        }
+
+        if (service.getRequiresVeterinarian() && !hasRole(professional, "VETERINARIAN")) {
+            throw new IllegalArgumentException("This service requires a veterinarian");
+        }
+
+        // Verificar disponibilidad excluyendo la cita actual
+        List<Appointment> conflicts = appointmentRepository.findByAssignedToAndStartDateTime(professional, dateTime);
+        boolean hasConflict = conflicts.stream()
+                .anyMatch(a -> !a.getId().equals(appointmentId));
+        
+        if (hasConflict) {
+            throw new IllegalStateException("Professional is not available at this time");
+        }
+    }
+
+    private User findAvailableProfessional(Services service, LocalDateTime dateTime) {
+        List<Role> allowedRoles = service.getRequiresVeterinarian() 
+                ? Arrays.asList(Role.VETERINARIAN) 
+                : Arrays.asList(Role.VETERINARIAN, Role.EMPLOYEE);
+
+        List<User> professionals = userRepository.findByRoleInAndActiveTrue(allowedRoles);
+
+        return professionals.stream()
+                .filter(prof -> !appointmentRepository.existsByAssignedToAndStartDateTime(prof, dateTime))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No professionals available at this time"));
+    }
+
+    private String findNextAvailableSlot(User professional, LocalDateTime fromDateTime) {
+        LocalDateTime checkTime = fromDateTime.plusMinutes(30);
+        for (int i = 0; i < 20; i++) {
+            if (!appointmentRepository.existsByAssignedToAndStartDateTime(professional, checkTime)) {
+                return checkTime.toString();
+            }
+            checkTime = checkTime.plusMinutes(30);
+        }
+        return null;
     }
 }
