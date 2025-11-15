@@ -40,6 +40,12 @@ public class ProductController {
     }
 
 
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<Void> activate(@PathVariable Long id) {
+        productService.activate(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productService.delete(id);

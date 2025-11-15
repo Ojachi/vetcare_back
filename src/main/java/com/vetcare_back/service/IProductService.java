@@ -10,5 +10,6 @@ public interface IProductService {
     ProductResponseDTO findById(Long id);
     List<ProductResponseDTO> findAll();
     ProductResponseDTO update(Long id, ProductDTO dto);
+    void activate(Long id);
     void delete(Long id);
 }

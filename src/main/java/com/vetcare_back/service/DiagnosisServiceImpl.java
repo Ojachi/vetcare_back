@@ -94,6 +94,28 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
     }
 
     @Override
+    public void activate(Long id) {
+        Diagnosis diagnosis = diagnosisRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Diagnosis not found"));
+
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
+
+        /* Solo el vet que creó o admin pueden activar */
+        if (!currentUser.getId().equals(diagnosis.getVet().getId()) && !hasRole(currentUser, "ADMIN")) {
+            throw new SecurityException("Only the veterinarian who created or admin can activate this diagnosis");
+        }
+
+        if (diagnosis.getActive()) {
+            throw new IllegalStateException("Diagnosis is already active");
+        }
+
+        diagnosis.setActive(true);
+        diagnosisRepository.save(diagnosis);
+    }
+
+    @Override
     public void deactivate(Long id) {
         Diagnosis diagnosis = diagnosisRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Diagnosis not found"));
@@ -105,6 +127,10 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
         /* Solo el vet que creó o admin pueden desactivar */
         if (!currentUser.getId().equals(diagnosis.getVet().getId()) && !hasRole(currentUser, "ADMIN")) {
             throw new SecurityException("Only the veterinarian who created or admin can deactivate this diagnosis");
+        }
+
+        if (!diagnosis.getActive()) {
+            throw new IllegalStateException("Diagnosis is already inactive");
         }
 
         diagnosis.setActive(false);

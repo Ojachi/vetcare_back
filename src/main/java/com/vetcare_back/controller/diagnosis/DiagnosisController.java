@@ -30,6 +30,12 @@ public class DiagnosisController {
         return ResponseEntity.ok(diagnosisService.update(id, dto));
     }
 
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<Void> activate(@PathVariable Long id) {
+        diagnosisService.activate(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivate(@PathVariable Long id) {
         diagnosisService.deactivate(id);

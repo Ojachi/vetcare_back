@@ -9,6 +9,8 @@ import java.util.List;
 public interface IPetService {
     PetResponseDTO create(PetDTO dto);
     PetResponseDTO update(Long id, PetDTO dto);
+    void activate(Long id);
+    void deactivate(Long id);
     void delete(Long id);
     PetResponseDTO getById(Long id);
     List<PetResponseDTO> listAll();

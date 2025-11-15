@@ -52,12 +52,29 @@ public class ServiceServiceImpl implements IServiceService {
     }
 
     @Override
+    public void activate(Long id) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can activate services");
+        }
+        Services service = serviceRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Service not found"));
+        if (service.isActive()) {
+            throw new IllegalStateException("Service is already active");
+        }
+        service.setActive(true);
+        serviceRepository.save(service);
+    }
+
+    @Override
     public void deactivate(Long id) {
         if (!hasRole("ADMIN")) {
             throw new SecurityException("Only admins can deactivate services");
         }
         Services service = serviceRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Service not found"));
+        if (!service.isActive()) {
+            throw new IllegalStateException("Service is already inactive");
+        }
         service.setActive(false);
         serviceRepository.save(service);
     }

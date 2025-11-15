@@ -71,6 +71,40 @@ public class PetServiceImpl implements IPetService{
     }
 
     @Override
+    public void activate(Long id) {
+        Pet pet = petRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Pet not found"));
+
+        if (!canAccessPet(pet, false)) {
+            throw new SecurityException("Unauthorized to activate this pet");
+        }
+
+        if (pet.getActive()) {
+            throw new IllegalStateException("Pet is already active");
+        }
+
+        pet.setActive(true);
+        petRepository.save(pet);
+    }
+
+    @Override
+    public void deactivate(Long id) {
+        Pet pet = petRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Pet not found"));
+
+        if (!canAccessPet(pet, false)) {
+            throw new SecurityException("Unauthorized to deactivate this pet");
+        }
+
+        if (!pet.getActive()) {
+            throw new IllegalStateException("Pet is already inactive");
+        }
+
+        pet.setActive(false);
+        petRepository.save(pet);
+    }
+
+    @Override
     public void delete(Long id) {
         Pet pet = petRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pet not found"));
@@ -79,7 +113,9 @@ public class PetServiceImpl implements IPetService{
             throw new SecurityException("Unauthorized to delete this pet");
         }
 
-        petRepository.delete(pet);
+        // Cambiar a soft delete
+        pet.setActive(false);
+        petRepository.save(pet);
     }
 
     @Override

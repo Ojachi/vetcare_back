@@ -10,6 +10,7 @@ import java.util.List;
 public interface IDiagnosisService {
     DiagnosisResponseDTO create(DiagnosisDTO dto);
     DiagnosisResponseDTO update(Long id, DiagnosisDTO dto);
+    void activate(Long id);
     void deactivate(Long id);
     DiagnosisResponseDTO getById(Long id);
     List<DiagnosisResponseDTO> listAll();

@@ -84,6 +84,25 @@ public class ProductServiceImpl implements IProductService {
     }
 
     @Override
+    public void activate(Long id) {
+        User currentUser = getCurrentUser();
+
+        if (!hasRole(currentUser, "ADMIN")) {
+            throw new SecurityException("Only admins can activate products");
+        }
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        if (product.getActive()) {
+            throw new IllegalStateException("Product is already active");
+        }
+
+        product.setActive(true);
+        productRepository.save(product);
+    }
+
+    @Override
     public void delete(Long id) {
         User currentUser = getCurrentUser();
 

@@ -6,6 +6,7 @@ import java.util.List;
 public interface IServiceService {
     ServiceResponseDTO create(ServiceDTO dto);
     ServiceResponseDTO update(Long id, ServiceDTO dto);
+    void activate(Long id);
     void deactivate(Long id);
     void delete(Long id);
     ServiceResponseDTO getById(Long id);

@@ -30,6 +30,18 @@ public class PetController {
         return ResponseEntity.ok(petService.update(id, dto));
     }
 
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<Void> activate(@PathVariable Long id) {
+        petService.activate(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivate(@PathVariable Long id) {
+        petService.deactivate(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         petService.delete(id);

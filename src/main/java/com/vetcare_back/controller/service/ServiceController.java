@@ -37,6 +37,12 @@ public class ServiceController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/admin/services/{id}/activate")
+    public ResponseEntity<Void> activate(@PathVariable Long id) {
+        serviceService.activate(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/admin/services/{id}/deactivate")
     public ResponseEntity<Void> deactivate(@PathVariable Long id) {
         serviceService.deactivate(id);
