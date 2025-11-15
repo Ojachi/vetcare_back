@@ -146,9 +146,9 @@ public class AppointmentServiceImpl implements IAppointmentService {
         User currentUser = userRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
 
-        /* Solo el asignado o admin puede cambiar estado */
-        if (!currentUser.getId().equals(appointment.getAssignedTo().getId()) && !hasRole("ADMIN")) {
-            throw new SecurityException("Only the assigned user or admin can change appointment status");
+        /* Solo el asignado, employee o admin puede cambiar estado */
+        if (!currentUser.getId().equals(appointment.getAssignedTo().getId()) && !hasRole("ADMIN") && !hasRole("EMPLOYEE")) {
+            throw new SecurityException("Only the assigned user, employee or admin can change appointment status");
         }
 
         /* Validar transición de estado */
@@ -180,9 +180,9 @@ public class AppointmentServiceImpl implements IAppointmentService {
         List<Appointment> appointments;
         if (hasRole("OWNER")) {
             appointments = appointmentRepository.findByOwner(currentUser);
-        } else if (hasRole("EMPLOYEE") || hasRole("VETERINARIAN")) {
+        } else if (hasRole("VETERINARIAN")) {
             appointments = appointmentRepository.findByAssignedTo(currentUser);
-        } else if (hasRole("ADMIN")) {
+        } else if (hasRole("EMPLOYEE") || hasRole("ADMIN")) {
             appointments = appointmentRepository.findAll();
         } else {
             throw new SecurityException("Unauthorized to list appointments");
