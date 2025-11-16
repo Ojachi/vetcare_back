@@ -143,7 +143,9 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public List<UserResponseDTO> listAll() {
-        if(!hasRole("ADMIN")) throw new SecurityException("Only admins can list all users");
+        if(!hasRole("ADMIN") && !hasRole("EMPLOYEE")) {
+            throw new SecurityException("Only admins and employees can list all users");
+        }
         return userRepository.findAll().stream()
                 .map(userMapper::toResponseDTO)
                 .collect(Collectors.toList());

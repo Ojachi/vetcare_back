@@ -159,6 +159,24 @@ public class PetServiceImpl implements IPetService{
         return pet.getOwner().getId().equals(currentUser.getId());
     }
 
+    @Override
+    public List<PetResponseDTO> listByOwner(Long ownerId) {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
+
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new UserNotFoundExeption("Owner not found"));
+
+        // OWNER solo puede ver sus propias mascotas
+        if (hasRole("OWNER") && !currentUser.getId().equals(ownerId)) {
+            throw new SecurityException("Unauthorized to view pets of other owners");
+        }
+
+        List<Pet> pets = petRepository.findByOwner(owner);
+        return pets.stream().map(petMapper::toResponseDTO).collect(Collectors.toList());
+    }
+
     private boolean hasRole(String role) {
         return SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()

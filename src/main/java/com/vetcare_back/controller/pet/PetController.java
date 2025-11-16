@@ -57,4 +57,9 @@ public class PetController {
     public ResponseEntity<List<PetResponseDTO>> listAll() {
         return ResponseEntity.ok(petService.listAll());
     }
+
+    @GetMapping("/owner/{ownerId}")
+    public ResponseEntity<List<PetResponseDTO>> listByOwner(@PathVariable Long ownerId) {
+        return ResponseEntity.ok(petService.listByOwner(ownerId));
+    }
 }

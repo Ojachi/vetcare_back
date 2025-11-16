@@ -14,4 +14,5 @@ public interface IPetService {
     void delete(Long id);
     PetResponseDTO getById(Long id);
     List<PetResponseDTO> listAll();
+    List<PetResponseDTO> listByOwner(Long ownerId);
 }

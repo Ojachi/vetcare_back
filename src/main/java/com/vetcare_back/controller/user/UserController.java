@@ -38,4 +38,9 @@ public class UserController {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(userService.getByEmail(currentUserEmail));
     }
+
+    @GetMapping
+    public ResponseEntity<java.util.List<UserResponseDTO>> getAllUsers(){
+        return ResponseEntity.ok(userService.listAll());
+    }
 }
