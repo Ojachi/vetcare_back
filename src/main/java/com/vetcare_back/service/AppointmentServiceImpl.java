@@ -178,12 +178,14 @@ public class AppointmentServiceImpl implements IAppointmentService {
                 .orElseThrow(() -> new UserNotFoundExeption("Current user not found"));
 
         List<Appointment> appointments;
-        if (hasRole("OWNER")) {
-            appointments = appointmentRepository.findByOwner(currentUser);
-        } else if (hasRole("VETERINARIAN")) {
-            appointments = appointmentRepository.findByAssignedTo(currentUser);
-        } else if (hasRole("EMPLOYEE") || hasRole("ADMIN")) {
+        Role userRole = currentUser.getRole();
+        
+        if (userRole == Role.ADMIN || userRole == Role.EMPLOYEE) {
             appointments = appointmentRepository.findAll();
+        } else if (userRole == Role.VETERINARIAN) {
+            appointments = appointmentRepository.findByAssignedTo(currentUser);
+        } else if (userRole == Role.OWNER) {
+            appointments = appointmentRepository.findByOwner(currentUser);
         } else {
             throw new SecurityException("Unauthorized to list appointments");
         }
