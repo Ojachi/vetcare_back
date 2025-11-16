@@ -151,6 +151,16 @@ public class UserServiceImpl implements IUserService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<UserResponseDTO> listProfessionals() {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getActive() && 
+                        (user.getRole() == com.vetcare_back.entity.Role.VETERINARIAN || 
+                         user.getRole() == com.vetcare_back.entity.Role.EMPLOYEE))
+                .map(userMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     private boolean hasRole(String role) {
         return SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()

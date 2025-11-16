@@ -16,4 +16,5 @@ public interface IUserService {
     UserResponseDTO getById(Long id);
     UserResponseDTO getByEmail(String email);
     List<UserResponseDTO> listAll();
+    List<UserResponseDTO> listProfessionals();
 }

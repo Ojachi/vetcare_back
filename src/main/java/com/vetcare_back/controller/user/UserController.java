@@ -43,4 +43,9 @@ public class UserController {
     public ResponseEntity<java.util.List<UserResponseDTO>> getAllUsers(){
         return ResponseEntity.ok(userService.listAll());
     }
+
+    @GetMapping("/professionals")
+    public ResponseEntity<java.util.List<UserResponseDTO>> getProfessionals(){
+        return ResponseEntity.ok(userService.listProfessionals());
+    }
 }
