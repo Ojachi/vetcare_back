@@ -17,4 +17,5 @@ public interface IDiagnosisService {
     List<DiagnosisResponseDTO> listByFilters(Long petId, Long vetId, LocalDate startDate, LocalDate endDate);
     List<DiagnosisResponseDTO> listByPet(Long petId);
     List<DiagnosisResponseDTO> listMyDiagnoses();
+    byte[] generatePdf(Long id);
 }

@@ -72,4 +72,13 @@ public class DiagnosisController {
     public ResponseEntity<List<DiagnosisResponseDTO>> getMyDiagnoses() {
         return ResponseEntity.ok(diagnosisService.listMyDiagnoses());
     }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {
+        byte[] pdfBytes = diagnosisService.generatePdf(id);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "attachment; filename=diagnostico_" + id + ".pdf")
+                .body(pdfBytes);
+    }
 }

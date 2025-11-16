@@ -29,14 +29,17 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
     private final UserRepository userRepository;
     private final DiagnosisMapper diagnosisMapper;
     private final PetRepository petRepository;
+    private final IPdfService pdfService;
 
     public DiagnosisServiceImpl(DiagnosisRepository diagnosisRepository, AppointmentRepository appointmentRepository,
-                                UserRepository userRepository, DiagnosisMapper diagnosisMapper, PetRepository petRepository) {
+                                UserRepository userRepository, DiagnosisMapper diagnosisMapper, PetRepository petRepository,
+                                IPdfService pdfService) {
         this.diagnosisRepository = diagnosisRepository;
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
         this.diagnosisMapper = diagnosisMapper;
         this.petRepository = petRepository;
+        this.pdfService = pdfService;
     }
 
     @Override
@@ -245,6 +248,19 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
 
     private boolean hasRole(User user, String roleName) {
         return user.getRole() != null && user.getRole().name().equals(roleName.toUpperCase());
+    }
+
+    @Override
+    public byte[] generatePdf(Long id) {
+        Diagnosis diagnosis = diagnosisRepository.findByIdWithAllRelations(id)
+                .orElseThrow(() -> new EntityNotFoundException("Diagnosis not found"));
+
+        if (!canAccessDiagnosis(diagnosis)) {
+            throw new SecurityException("Unauthorized to view this diagnosis");
+        }
+
+        DiagnosisResponseDTO dto = diagnosisMapper.toResponseDTO(diagnosis);
+        return pdfService.generateDiagnosisPdf(dto);
     }
 
 }
