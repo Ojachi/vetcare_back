@@ -9,6 +9,7 @@ import com.vetcare_back.exception.UserNotFoundExeption;
 import com.vetcare_back.mapper.AppointmentMapper;
 import com.vetcare_back.mapper.UserMapper;
 import com.vetcare_back.repository.AppointmentRepository;
+import com.vetcare_back.repository.DiagnosisRepository;
 import com.vetcare_back.repository.PetRepository;
 import com.vetcare_back.repository.ServiceRepository;
 import com.vetcare_back.repository.UserRepository;
@@ -29,16 +30,19 @@ public class AppointmentServiceImpl implements IAppointmentService {
     private final UserRepository userRepository;
     private final AppointmentMapper appointmentMapper;
     private final UserMapper userMapper;
+    private final DiagnosisRepository diagnosisRepository;
 
     public AppointmentServiceImpl(AppointmentRepository appointmentRepository, PetRepository petRepository,
                                   ServiceRepository serviceRepository, UserRepository userRepository,
-                                  AppointmentMapper appointmentMapper, UserMapper userMapper) {
+                                  AppointmentMapper appointmentMapper, UserMapper userMapper,
+                                  DiagnosisRepository diagnosisRepository) {
         this.appointmentRepository = appointmentRepository;
         this.petRepository = petRepository;
         this.serviceRepository = serviceRepository;
         this.userRepository = userRepository;
         this.appointmentMapper = appointmentMapper;
         this.userMapper = userMapper;
+        this.diagnosisRepository = diagnosisRepository;
     }
 
     @Override
@@ -155,6 +159,13 @@ public class AppointmentServiceImpl implements IAppointmentService {
         AppointmentStatus newStatus = dto.getStatus();
         if (!isValidStatusTransition(appointment.getStatus(), newStatus)) {
             throw new IllegalStateException("Invalid status transition from " + appointment.getStatus() + " to " + newStatus);
+        }
+
+        /* Validar que servicios con veterinario tengan diagnóstico antes de completar */
+        if (newStatus == AppointmentStatus.COMPLETED && appointment.getService().getRequiresVeterinarian()) {
+            if (diagnosisRepository.findByAppointment(appointment).isEmpty()) {
+                throw new IllegalStateException("Cannot complete appointment: diagnosis is required for veterinary services");
+            }
         }
 
         appointment.setStatus(newStatus);
