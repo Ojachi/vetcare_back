@@ -35,6 +35,10 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String image;
 
+    @Column(name = "stock", nullable = false)
+    @Builder.Default
+    private Integer stock = 0;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean active = true;

@@ -11,5 +11,6 @@ public class ProductResponseDTO {
     private String description;
     private BigDecimal price;
     private String image;
+    private Integer stock;
     private Boolean active;
 }
