@@ -50,6 +50,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
                         .requestMatchers("/api/products/**").hasRole("ADMIN")
 
+                        // Chat endpoints - público
+                        .requestMatchers("/api/chat/**").permitAll()
+
                         // Swagger/OpenAPI
                         .requestMatchers(
                                 "/v3/api-docs/**",

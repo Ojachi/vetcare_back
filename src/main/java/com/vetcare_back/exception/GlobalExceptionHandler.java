@@ -96,6 +96,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
+    @ExceptionHandler(com.vetcare_back.exception.TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequests(com.vetcare_back.exception.TooManyRequestsException ex) {
+        ErrorResponse error = new ErrorResponse(
+                429,
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(429).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         ErrorResponse error = new ErrorResponse(
