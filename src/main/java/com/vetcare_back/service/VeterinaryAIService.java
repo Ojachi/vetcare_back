@@ -73,7 +73,7 @@ public class VeterinaryAIService {
     
     private String formatVeterinaryResponse(String aiResponse, String originalQuestion) {
         if (aiResponse == null || aiResponse.trim().isEmpty()) {
-            return getGenericVeterinaryAdvice(originalQuestion);
+            throw new RuntimeException("No response from AI service");
         }
         
         // Asegurar que siempre termine con recomendación veterinaria
@@ -86,102 +86,27 @@ public class VeterinaryAIService {
     }
     
     private String getGenericVeterinaryAdvice(String question) {
-        String lowerQuestion = question.toLowerCase();
-        
-        if (lowerQuestion.contains("vomit") || lowerQuestion.contains("vómit")) {
-            return """
-                El vómito en mascotas puede tener varias causas:
-                
-                🔸 Causas comunes:
-                - Comer muy rápido
-                - Cambio brusco de dieta
-                - Estrés o ansiedad
-                
-                🔸 Primeros auxilios:
-                - Retira la comida por 2-4 horas
-                - Ofrece agua en pequeñas cantidades
-                - Mantén a la mascota en reposo
-                
-                ⚠️ Consulta veterinaria urgente si:
-                - Vómito con sangre
-                - Más de 3 episodios en 24h
-                - Letargo o deshidratación
-                """;
-        }
-        
-        if (lowerQuestion.contains("diarrea")) {
-            return """
-                La diarrea puede indicar varios problemas:
-                
-                🔸 Cuidados inmediatos:
-                - Dieta blanda (arroz cocido, pollo hervido)
-                - Mantener hidratación
-                - Observar frecuencia y consistencia
-                
-                ⚠️ Consulta veterinaria si:
-                - Diarrea con sangre
-                - Persiste más de 24 horas
-                - Signos de deshidratación
-                """;
-        }
-        
-        return """
-            Para cualquier síntoma en tu mascota:
-            
-            🔸 Observa y registra:
-            - Duración de los síntomas
-            - Frecuencia e intensidad
-            - Cambios en comportamiento
-            
-            🔸 Mantén a tu mascota:
-            - En un lugar cómodo y tranquilo
-            - Con acceso a agua fresca
-            - Bajo observación constante
-            
-            ⚠️ La evaluación veterinaria profesional es siempre recomendada para determinar la causa exacta y el tratamiento apropiado.
-            """;
+        return null;
     }
     
     private String detectGreetingOrGeneral(String message) {
         String lower = message.toLowerCase().trim();
         
-        // Saludos
-        if (lower.matches("^(hola|hi|hello|hey|buenos días|buenas tardes|buenas noches|saludos)$")) {
-            return "¡Hola! 🐾 Soy el asistente veterinario de VetCare. \n\n" +
-                   "¿Cómo puedo ayudarte hoy con tu mascota? Puedes preguntarme sobre:\n" +
-                   "• Síntomas o comportamientos extraños\n" +
-                   "• Cuidados básicos\n" +
-                   "• Primeros auxilios\n" +
-                   "• Alimentación";
+        // Solo saludos de 1 palabra
+        if (lower.matches("^(hola|hi|hello|hey)$")) {
+            return "¡Hola! 🐾 Soy el asistente veterinario de VetCare. ¿Cómo puedo ayudarte con tu mascota?";
         }
         
-        // Agradecimientos
-        if (lower.matches("^(gracias|thanks|thank you|muchas gracias)$")) {
-            return "¡De nada! 😊 Si tienes más preguntas sobre tu mascota, estoy aquí para ayudarte.";
+        // Solo agradecimientos de 1 palabra
+        if (lower.matches("^(gracias|thanks)$")) {
+            return "¡De nada! 😊";
         }
         
-        // Despedidas
-        if (lower.matches("^(adiós|adios|bye|chao|hasta luego)$")) {
-            return "¡Hasta pronto! 🐾 Cuida bien de tu mascota.";
-        }
-        
-        // Mensajes muy cortos sin contexto veterinario
-        if (lower.length() < 10 && !containsVeterinaryKeywords(lower)) {
-            return "Por favor, cuéntame más sobre tu mascota. ¿Qué síntomas tiene o qué te preocupa?";
-        }
-        
+        // Todo lo demás va a la IA
         return null;
     }
     
-    private boolean containsVeterinaryKeywords(String message) {
-        String[] keywords = {"perro", "gato", "mascota", "animal", "vómit", "diarrea", 
-                            "fiebre", "enferm", "dolor", "comer", "beber", "orina", "heces"};
-        for (String keyword : keywords) {
-            if (message.contains(keyword)) return true;
-        }
-        return false;
-    }
-    
+
     private void validateInput(String message) {
         if (message == null || message.trim().isEmpty()) {
             throw new IllegalArgumentException("Message cannot be empty");

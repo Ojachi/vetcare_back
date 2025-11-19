@@ -76,7 +76,7 @@ public class HuggingFaceService {
         Map<String, Object> requestBody = Map.of(
             "model", model,
             "messages", List.of(
-                Map.of("role", "system", "content", "Eres un asistente veterinario. Responde SOLO con consejos prácticos inmediatos y SIEMPRE termina recomendando agendar cita en la veterinaria. Sé directo, no uses frases como 'Lo siento' o 'es importante recordar'. Máximo 100 palabras."),
+                Map.of("role", "system", "content", "Eres un asistente veterinario amigable de VetCare. Si te saludan, responde cordialmente. Si preguntan sobre síntomas o salud de mascotas, da consejos prácticos y recomienda agendar cita. Sé natural y conciso. Máximo 100 palabras."),
                 Map.of("role", "user", "content", prompt)
             ),
             "max_tokens", 150,
@@ -115,26 +115,6 @@ public class HuggingFaceService {
     }
     
     private String getOfflineResponse(String prompt) {
-        String lowerPrompt = prompt.toLowerCase();
-        
-        if (lowerPrompt.contains("vomit") || lowerPrompt.contains("vómit")) {
-            return "El vómito en mascotas puede ser causado por comer muy rápido, cambios en la dieta o estrés. " +
-                   "Retira la comida por 2-4 horas y ofrece agua en pequeñas cantidades. " +
-                   "Si persiste o hay sangre, consulta inmediatamente con un veterinario.";
-        }
-        
-        if (lowerPrompt.contains("diarrea")) {
-            return "La diarrea puede indicar problemas digestivos. Ofrece dieta blanda (arroz cocido, pollo hervido) " +
-                   "y mantén la hidratación. Si hay sangre o persiste más de 24 horas, consulta con un veterinario.";
-        }
-        
-        if (lowerPrompt.contains("fiebre") || lowerPrompt.contains("caliente")) {
-            return "La fiebre en mascotas es seria. Mantén a tu mascota en un lugar fresco y ofrece agua. " +
-                   "La fiebre siempre requiere atención veterinaria inmediata.";
-        }
-        
-        return "Para cualquier síntoma en tu mascota, observa la duración e intensidad. " +
-               "Mantén a tu mascota cómoda y con acceso a agua. " +
-               "Siempre es recomendable consultar con un veterinario para un diagnóstico preciso.";
+        return null;
     }
 }
