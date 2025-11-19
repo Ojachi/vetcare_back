@@ -15,4 +15,5 @@ public class ChatResponseDTO {
     
     private String response;
     private LocalDateTime timestamp;
+    private String source; // "AI" o "OFFLINE"
 }

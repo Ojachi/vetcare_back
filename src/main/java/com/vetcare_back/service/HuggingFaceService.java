@@ -32,7 +32,7 @@ public class HuggingFaceService {
         this.restTemplate = restTemplate;
     }
     
-    public String generateResponse(String prompt) {
+    public ResponseWithSource generateResponse(String prompt) {
         // Intentar con diferentes modelos si uno falla
         for (int attempt = 0; attempt < models.length; attempt++) {
             String model = models[currentModelIndex];
@@ -41,7 +41,7 @@ public class HuggingFaceService {
             try {
                 String response = callModel(url, model, prompt);
                 if (response != null && !response.trim().isEmpty()) {
-                    return response;
+                    return new ResponseWithSource(response, "AI", model);
                 }
             } catch (Exception e) {
                 log.warn("Model {} failed: {}", model, e.getMessage());
@@ -52,7 +52,19 @@ public class HuggingFaceService {
         }
         
         // Si todos los modelos fallan, usar respuesta offline
-        return getOfflineResponse(prompt);
+        return new ResponseWithSource(getOfflineResponse(prompt), "OFFLINE", null);
+    }
+    
+    public static class ResponseWithSource {
+        public final String response;
+        public final String source;
+        public final String model;
+        
+        public ResponseWithSource(String response, String source, String model) {
+            this.response = response;
+            this.source = source;
+            this.model = model;
+        }
     }
     
     private String callModel(String url, String model, String prompt) {

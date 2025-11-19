@@ -30,16 +30,27 @@ public class VeterinaryAIService {
         // Validación de entrada
         validateInput(userMessage);
         
+        // Detectar saludos y mensajes generales
+        String greetingResponse = detectGreetingOrGeneral(userMessage);
+        if (greetingResponse != null) {
+            return ChatResponseDTO.builder()
+                .response(greetingResponse)
+                .timestamp(LocalDateTime.now())
+                .source("OFFLINE")
+                .build();
+        }
+        
         // Crear prompt veterinario especializado
         String veterinaryPrompt = buildVeterinaryPrompt(userMessage);
         
         try {
-            String aiResponse = huggingFaceService.generateResponse(veterinaryPrompt);
-            String formattedResponse = formatVeterinaryResponse(aiResponse, userMessage);
+            HuggingFaceService.ResponseWithSource aiResponse = huggingFaceService.generateResponse(veterinaryPrompt);
+            String formattedResponse = formatVeterinaryResponse(aiResponse.response, userMessage);
             
             return ChatResponseDTO.builder()
                 .response(formattedResponse)
                 .timestamp(LocalDateTime.now())
+                .source(aiResponse.source)
                 .build();
                 
         } catch (Exception e) {
@@ -131,6 +142,46 @@ public class VeterinaryAIService {
             """;
     }
     
+    private String detectGreetingOrGeneral(String message) {
+        String lower = message.toLowerCase().trim();
+        
+        // Saludos
+        if (lower.matches("^(hola|hi|hello|hey|buenos días|buenas tardes|buenas noches|saludos)$")) {
+            return "¡Hola! 🐾 Soy el asistente veterinario de VetCare. \n\n" +
+                   "¿Cómo puedo ayudarte hoy con tu mascota? Puedes preguntarme sobre:\n" +
+                   "• Síntomas o comportamientos extraños\n" +
+                   "• Cuidados básicos\n" +
+                   "• Primeros auxilios\n" +
+                   "• Alimentación";
+        }
+        
+        // Agradecimientos
+        if (lower.matches("^(gracias|thanks|thank you|muchas gracias)$")) {
+            return "¡De nada! 😊 Si tienes más preguntas sobre tu mascota, estoy aquí para ayudarte.";
+        }
+        
+        // Despedidas
+        if (lower.matches("^(adiós|adios|bye|chao|hasta luego)$")) {
+            return "¡Hasta pronto! 🐾 Cuida bien de tu mascota.";
+        }
+        
+        // Mensajes muy cortos sin contexto veterinario
+        if (lower.length() < 10 && !containsVeterinaryKeywords(lower)) {
+            return "Por favor, cuéntame más sobre tu mascota. ¿Qué síntomas tiene o qué te preocupa?";
+        }
+        
+        return null;
+    }
+    
+    private boolean containsVeterinaryKeywords(String message) {
+        String[] keywords = {"perro", "gato", "mascota", "animal", "vómit", "diarrea", 
+                            "fiebre", "enferm", "dolor", "comer", "beber", "orina", "heces"};
+        for (String keyword : keywords) {
+            if (message.contains(keyword)) return true;
+        }
+        return false;
+    }
+    
     private void validateInput(String message) {
         if (message == null || message.trim().isEmpty()) {
             throw new IllegalArgumentException("Message cannot be empty");
@@ -145,6 +196,7 @@ public class VeterinaryAIService {
             .response("Lo siento, el servicio no está disponible en este momento. " +
                      "Para consultas urgentes, contacta directamente con la veterinaria.")
             .timestamp(LocalDateTime.now())
+            .source("OFFLINE")
             .build();
     }
 }
