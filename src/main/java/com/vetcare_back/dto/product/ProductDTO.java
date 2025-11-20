@@ -22,6 +22,7 @@ public class ProductDTO {
     @Pattern(regexp = "^(data:image/(png|jpeg|jpg);base64,[A-Za-z0-9+/=]+)?$", message = "Image must be a valid Base64 string (PNG/JPEG) or null")
     private String image;
 
+    @NotNull(message = "Stock is required")
     @Min(value = 0, message = "Stock cannot be negative")
     private Integer stock;
 }
