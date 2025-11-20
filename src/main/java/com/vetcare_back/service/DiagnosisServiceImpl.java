@@ -55,8 +55,8 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
 
         Appointment appointment = appointmentRepository.findById(dto.getAppointmentId())
                 .orElseThrow(() -> new EntityNotFoundException("Appointment not found"));
-        if (appointment.getStatus() != AppointmentStatus.COMPLETED) {
-            throw new IllegalStateException("Diagnosis can only be created for COMPLETED appointments");
+        if (appointment.getStatus() != AppointmentStatus.ACCEPTED && appointment.getStatus() != AppointmentStatus.COMPLETED) {
+            throw new IllegalStateException("Diagnosis can only be created for ACCEPTED or COMPLETED appointments");
         }
         if (diagnosisRepository.findByAppointment(appointment).isPresent()) {
             throw new IllegalStateException("Appointment already has a diagnosis");
@@ -86,8 +86,8 @@ public class DiagnosisServiceImpl implements IDiagnosisService {
 
         Appointment appointment = appointmentRepository.findById(dto.getAppointmentId())
                 .orElseThrow(() -> new EntityNotFoundException("Appointment not found"));
-        if (appointment.getStatus() != AppointmentStatus.COMPLETED) {
-            throw new IllegalStateException("Diagnosis can only be updated for COMPLETED appointments");
+        if (appointment.getStatus() != AppointmentStatus.ACCEPTED && appointment.getStatus() != AppointmentStatus.COMPLETED) {
+            throw new IllegalStateException("Diagnosis can only be updated for ACCEPTED or COMPLETED appointments");
         }
 
         diagnosisMapper.updateEntity(dto, diagnosis);
