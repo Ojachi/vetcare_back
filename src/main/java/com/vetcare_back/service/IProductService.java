@@ -9,6 +9,7 @@ public interface IProductService {
     ProductResponseDTO create(ProductDTO dto);
     ProductResponseDTO findById(Long id);
     List<ProductResponseDTO> findAll();
+    List<ProductResponseDTO> findByCategory(Long categoryId);
     ProductResponseDTO update(Long id, ProductDTO dto);
     void activate(Long id);
     void delete(Long id);

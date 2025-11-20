@@ -3,9 +3,11 @@ package com.vetcare_back.service;
 import com.vetcare_back.dto.product.ProductDTO;
 import com.vetcare_back.dto.product.ProductResponseDTO;
 import com.vetcare_back.entity.Product;
+import com.vetcare_back.entity.ProductCategory;
 import com.vetcare_back.entity.User;
 import com.vetcare_back.exception.UserNotFoundExeption;
 import com.vetcare_back.mapper.ProductMapper;
+import com.vetcare_back.repository.ProductCategoryRepository;
 import com.vetcare_back.repository.ProductRepository;
 import com.vetcare_back.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -22,11 +24,13 @@ public class ProductServiceImpl implements IProductService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final ProductMapper productMapper;
+    private final ProductCategoryRepository categoryRepository;
 
-    public ProductServiceImpl(ProductRepository productRepository, UserRepository userRepository, ProductMapper productMapper) {
+    public ProductServiceImpl(ProductRepository productRepository, UserRepository userRepository, ProductMapper productMapper, ProductCategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.productMapper = productMapper;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
@@ -41,6 +45,12 @@ public class ProductServiceImpl implements IProductService {
         validateBase64(dto.getImage());
 
         Product product = productMapper.toEntity(dto);
+        
+        if (dto.getCategoryId() != null) {
+            product.setCategory(categoryRepository.findByIdAndActiveTrue(dto.getCategoryId())
+                    .orElseThrow(() -> new EntityNotFoundException("Category not found or inactive")));
+        }
+        
         product = productRepository.save(product);
         return productMapper.toResponseDTO(product);
     }
@@ -57,6 +67,13 @@ public class ProductServiceImpl implements IProductService {
     public List<ProductResponseDTO> findAll() {
         return productRepository.findAll().stream()
                 .filter(Product::getActive)
+                .map(productMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProductResponseDTO> findByCategory(Long categoryId) {
+        return productRepository.findByCategoryIdAndActiveTrue(categoryId).stream()
                 .map(productMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -79,6 +96,14 @@ public class ProductServiceImpl implements IProductService {
         }
 
         productMapper.updateEntity(dto, product);
+        
+        if (dto.getCategoryId() != null) {
+            product.setCategory(categoryRepository.findByIdAndActiveTrue(dto.getCategoryId())
+                    .orElseThrow(() -> new EntityNotFoundException("Category not found or inactive")));
+        } else {
+            product.setCategory(null);
+        }
+        
         product = productRepository.save(product);
         return productMapper.toResponseDTO(product);
     }

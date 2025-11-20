@@ -21,4 +21,10 @@ public interface PurchaseItemRepository extends JpaRepository<PurchaseItem, Long
 
     @Query("SELECT SUM(pi.quantity) FROM PurchaseItem pi WHERE pi.product.id = :productId AND pi.purchase.status = 'COMPLETED'")
     Integer getTotalSoldQuantityByProductId(@Param("productId") Long productId);
+
+    @Query("SELECT pi FROM PurchaseItem pi " +
+           "WHERE pi.purchase.status = 'COMPLETED' " +
+           "AND pi.purchase.purchaseDate BETWEEN :from AND :to")
+    List<PurchaseItem> findCompletedItemsByDateRange(@Param("from") java.time.LocalDateTime from, 
+                                                      @Param("to") java.time.LocalDateTime to);
 }

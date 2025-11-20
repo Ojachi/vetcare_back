@@ -13,4 +13,6 @@ public class ProductResponseDTO {
     private String image;
     private Integer stock;
     private Boolean active;
+    private Long categoryId;
+    private String categoryName;
 }

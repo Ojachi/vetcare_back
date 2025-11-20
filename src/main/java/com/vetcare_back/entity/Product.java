@@ -42,4 +42,8 @@ public class Product {
     @Column(nullable = false)
     @Builder.Default
     private Boolean active = true;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id")
+    private ProductCategory category;
 }
