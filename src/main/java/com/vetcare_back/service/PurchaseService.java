@@ -308,8 +308,8 @@ public class PurchaseService {
         Long cancelledOrders = purchaseRepository.countByStatusAndDateRange(PurchaseStatus.CANCELLED, from, to);
         Long totalOrders = completedOrders + pendingOrders + cancelledOrders;
         
-        BigDecimal averageOrderValue = totalOrders > 0 ? 
-                totalAmount.divide(BigDecimal.valueOf(totalOrders), 2, java.math.RoundingMode.HALF_UP) : 
+        BigDecimal averageOrderValue = completedOrders > 0 ? 
+                totalAmount.divide(BigDecimal.valueOf(completedOrders), 2, java.math.RoundingMode.HALF_UP) : 
                 BigDecimal.ZERO;
         
         java.util.Map<String, Long> salesByStatus = new java.util.HashMap<>();
