@@ -251,14 +251,14 @@ public class PurchaseService {
             }
         }
 
+        BigDecimal total = BigDecimal.ZERO;
+        
         Purchase purchase = new Purchase();
         purchase.setUser(targetUser);
         purchase.setStatus(PurchaseStatus.COMPLETED);
         purchase.setPurchaseDate(LocalDateTime.now());
         purchase.setNotes(dto.getNotes());
-        
-        BigDecimal total = BigDecimal.ZERO;
-        
+        purchase.setTotalAmount(BigDecimal.ZERO);
         purchase = purchaseRepository.save(purchase);
         
         for (ManualPurchaseItemDTO itemDto : dto.getItems()) {
