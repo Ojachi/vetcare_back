@@ -44,6 +44,10 @@ public class PurchaseService {
         Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
+        if (!product.getActive()) {
+            throw new RuntimeException("El producto ya no está disponible");
+        }
+
         if (product.getStock() < dto.getQuantity()) {
             throw new RuntimeException("Stock insuficiente");
         }
@@ -90,9 +94,12 @@ public class PurchaseService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Verificar stock
+        // Verificar productos activos y stock
         for (CartItem cartItem : cartItems) {
             Product product = cartItem.getProduct();
+            if (!product.getActive()) {
+                throw new RuntimeException("El producto '" + product.getName() + "' ya no está disponible");
+            }
             if (product.getStock() < cartItem.getQuantity()) {
                 throw new RuntimeException("Stock insuficiente para: " + product.getName());
             }

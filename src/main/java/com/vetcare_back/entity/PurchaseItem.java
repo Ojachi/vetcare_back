@@ -22,8 +22,8 @@ public class PurchaseItem {
     @JoinColumn(name = "purchase_id", nullable = false)
     private Purchase purchase;
 
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
-    @JoinColumn(name = "product_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "product_id")
     private Product product;
 
     @Column(name = "product_name", nullable = false, length = 100)

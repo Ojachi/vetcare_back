@@ -4,6 +4,7 @@ import com.vetcare_back.dto.category.CategoryDTO;
 import com.vetcare_back.dto.category.CategoryResponseDTO;
 import com.vetcare_back.entity.ProductCategory;
 import com.vetcare_back.repository.ProductCategoryRepository;
+import com.vetcare_back.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,9 @@ public class CategoryService {
 
     @Autowired
     private ProductCategoryRepository categoryRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
 
     public CategoryResponseDTO create(CategoryDTO dto) {
         if (categoryRepository.existsByNameAndActiveTrue(dto.getName())) {
@@ -65,6 +69,11 @@ public class CategoryService {
     public void delete(Long id) {
         ProductCategory category = categoryRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new EntityNotFoundException("Category not found or inactive"));
+
+        productRepository.findByCategoryId(id).forEach(product -> {
+            product.setCategory(null);
+            productRepository.save(product);
+        });
 
         category.setActive(false);
         categoryRepository.save(category);
