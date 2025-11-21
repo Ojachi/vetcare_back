@@ -2,10 +2,14 @@ package com.vetcare_back.service;
 
 import com.vetcare_back.dto.pet.PetDTO;
 import com.vetcare_back.dto.pet.PetResponseDTO;
+import com.vetcare_back.entity.Appointment;
+import com.vetcare_back.entity.Diagnosis;
 import com.vetcare_back.entity.Pet;
 import com.vetcare_back.entity.User;
 import com.vetcare_back.exception.UserNotFoundExeption;
 import com.vetcare_back.mapper.PetMapper;
+import com.vetcare_back.repository.AppointmentRepository;
+import com.vetcare_back.repository.DiagnosisRepository;
 import com.vetcare_back.repository.PetRepository;
 import com.vetcare_back.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,11 +25,16 @@ public class PetServiceImpl implements IPetService{
     private final PetRepository petRepository;
     private final UserRepository userRepository;
     private final PetMapper petMapper;
+    private final AppointmentRepository appointmentRepository;
+    private final DiagnosisRepository diagnosisRepository;
 
-    public PetServiceImpl(PetRepository petRepository, UserRepository userRepository, PetMapper petMapper) {
+    public PetServiceImpl(PetRepository petRepository, UserRepository userRepository, PetMapper petMapper,
+                          AppointmentRepository appointmentRepository, DiagnosisRepository diagnosisRepository) {
         this.petRepository = petRepository;
         this.userRepository = userRepository;
         this.petMapper = petMapper;
+        this.appointmentRepository = appointmentRepository;
+        this.diagnosisRepository = diagnosisRepository;
     }
 
     @Override
@@ -113,7 +122,16 @@ public class PetServiceImpl implements IPetService{
             throw new SecurityException("Unauthorized to delete this pet");
         }
 
-        // Cambiar a soft delete
+        List<Appointment> appointments = appointmentRepository.findByPet(pet);
+        if (!appointments.isEmpty()) {
+            throw new IllegalStateException("Cannot delete pet with existing appointments. Found " + appointments.size() + " appointment(s).");
+        }
+
+        List<Diagnosis> diagnoses = diagnosisRepository.findByAppointment_Pet_Id(id);
+        if (!diagnoses.isEmpty()) {
+            throw new IllegalStateException("Cannot delete pet with existing diagnoses. Found " + diagnoses.size() + " diagnosis(es).");
+        }
+
         pet.setActive(false);
         petRepository.save(pet);
     }
