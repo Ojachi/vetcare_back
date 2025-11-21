@@ -26,7 +26,7 @@ public class PurchaseItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
-    @Column(name = "product_name", nullable = false, length = 100)
+    @Column(name = "product_name", length = 100)
     private String productName;
 
     @Column(nullable = false)
@@ -52,7 +52,7 @@ public class PurchaseItem {
         if (price != null && quantity != null) {
             this.subtotal = price.multiply(BigDecimal.valueOf(quantity));
         }
-        if (productName == null && product != null) {
+        if (product != null && productName == null) {
             this.productName = product.getName();
         }
     }

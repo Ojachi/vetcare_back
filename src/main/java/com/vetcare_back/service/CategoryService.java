@@ -2,6 +2,7 @@ package com.vetcare_back.service;
 
 import com.vetcare_back.dto.category.CategoryDTO;
 import com.vetcare_back.dto.category.CategoryResponseDTO;
+import com.vetcare_back.entity.Product;
 import com.vetcare_back.entity.ProductCategory;
 import com.vetcare_back.repository.ProductCategoryRepository;
 import com.vetcare_back.repository.ProductRepository;
@@ -70,10 +71,9 @@ public class CategoryService {
         ProductCategory category = categoryRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new EntityNotFoundException("Category not found or inactive"));
 
-        productRepository.findByCategoryId(id).forEach(product -> {
-            product.setCategory(null);
-            productRepository.save(product);
-        });
+        List<Product> products = productRepository.findByCategoryIdAndActiveTrue(id);
+        products.forEach(product -> product.setCategory(null));
+        productRepository.saveAll(products);
 
         category.setActive(false);
         categoryRepository.save(category);
