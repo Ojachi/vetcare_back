@@ -4,6 +4,7 @@ import com.vetcare_back.dto.purchase.*;
 import com.vetcare_back.entity.*;
 import com.vetcare_back.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +37,7 @@ public class PurchaseService {
     @Autowired
     private CartItemRepository cartItemRepository;
 
+    @CacheEvict(value = "statistics", allEntries = true)
     public PurchaseResponseDTO buyNow(BuyNowDTO dto) {
         Long userId = getCurrentUserId();
         User user = userRepository.findById(userId)
@@ -81,6 +83,7 @@ public class PurchaseService {
         return PurchaseResponseDTO.fromEntity(purchase);
     }
 
+    @CacheEvict(value = "statistics", allEntries = true)
     public PurchaseResponseDTO purchaseFromCart() {
         Long userId = getCurrentUserId();
         Cart cart = cartRepository.findByUserIdWithItems(userId)
@@ -146,6 +149,7 @@ public class PurchaseService {
         return PurchaseResponseDTO.fromEntity(purchase);
     }
 
+    @CacheEvict(value = "statistics", allEntries = true)
     public PurchaseResponseDTO completePurchase(Long purchaseId) {
         User currentUser = getCurrentUser();
         Purchase purchase = purchaseRepository.findById(purchaseId)
@@ -161,6 +165,7 @@ public class PurchaseService {
         return PurchaseResponseDTO.fromEntity(purchase);
     }
 
+    @CacheEvict(value = "statistics", allEntries = true)
     public PurchaseResponseDTO cancelPurchase(Long purchaseId) {
         User currentUser = getCurrentUser();
         Purchase purchase = purchaseRepository.findById(purchaseId)
@@ -230,6 +235,7 @@ public class PurchaseService {
         });
     }
 
+    @CacheEvict(value = "statistics", allEntries = true)
     public PurchaseResponseDTO createManualPurchase(ManualPurchaseDTO dto) {
         User targetUser = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
