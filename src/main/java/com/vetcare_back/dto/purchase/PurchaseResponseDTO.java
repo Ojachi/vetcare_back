@@ -19,6 +19,7 @@ public class PurchaseResponseDTO {
     private Long id;
     private Long userId;
     private String userEmail;
+    private String userName;
     private List<PurchaseItemResponseDTO> items;
     private BigDecimal totalAmount;
     private LocalDateTime purchaseDate;
@@ -36,6 +37,7 @@ public class PurchaseResponseDTO {
                 .id(purchase.getId())
                 .userId(purchase.getUser().getId())
                 .userEmail(purchase.getUser().getEmail())
+                .userName(purchase.getUser().getName())
                 .items(itemDTOs)
                 .totalAmount(purchase.getTotalAmount())
                 .purchaseDate(purchase.getPurchaseDate())
