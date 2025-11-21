@@ -42,8 +42,8 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
     @Query("SELECT p FROM Purchase p WHERE " +
            "(:status IS NULL OR p.status = :status) AND " +
            "(:userId IS NULL OR p.user.id = :userId) AND " +
-           "(:from IS NULL OR p.purchaseDate >= :from) AND " +
-           "(:to IS NULL OR p.purchaseDate <= :to) " +
+           "(CAST(:from AS timestamp) IS NULL OR p.purchaseDate >= :from) AND " +
+           "(CAST(:to AS timestamp) IS NULL OR p.purchaseDate <= :to) " +
            "ORDER BY p.purchaseDate DESC")
     Page<Purchase> findAllWithFilters(@Param("status") PurchaseStatus status,
                                       @Param("userId") Long userId,
