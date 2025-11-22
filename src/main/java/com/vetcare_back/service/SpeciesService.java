@@ -3,6 +3,7 @@ package com.vetcare_back.service;
 import com.vetcare_back.dto.species.SpeciesDTO;
 import com.vetcare_back.dto.species.SpeciesResponseDTO;
 import com.vetcare_back.entity.Species;
+import com.vetcare_back.repository.BreedRepository;
 import com.vetcare_back.repository.SpeciesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
