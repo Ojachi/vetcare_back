@@ -57,25 +57,70 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public ProductResponseDTO findById(Long id) {
+        boolean debug = "true".equals(System.getenv("DEBUG_PERFORMANCE"));
+        long start = 0;
+        
+        if (debug) {
+            System.out.println("\n🔍 ========== PRODUCT FINDBYID START (id=" + id + ") ==========");
+            start = System.currentTimeMillis();
+        }
+        
         Product product = productRepository.findById(id)
                 .filter(Product::getActive)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found or inactive"));
-        return productMapper.toResponseDTO(product);
+        
+        ProductResponseDTO result = productMapper.toResponseDTO(product);
+        
+        if (debug) {
+            System.out.println("⏱️ TOTAL findById(): " + (System.currentTimeMillis() - start) + "ms");
+            System.out.println("🔍 ========== PRODUCT FINDBYID END ==========\n");
+        }
+        
+        return result;
     }
 
     @Override
     public List<ProductResponseDTO> findAll() {
-        User currentUser = getCurrentUser();
+        boolean debug = "true".equals(System.getenv("DEBUG_PERFORMANCE"));
+        long totalStart = 0, step1 = 0, step2 = 0, step3 = 0;
         
-        if (hasRole(currentUser, "ADMIN")) {
-            return productRepository.findAllWithCategory().stream()
-                    .map(productMapper::toResponseDTO)
-                    .collect(Collectors.toList());
+        if (debug) {
+            System.out.println("\n🔍 ========== PRODUCTS FINDALL START ==========");
+            totalStart = System.currentTimeMillis();
+            step1 = System.currentTimeMillis();
         }
         
-        return productRepository.findAllActiveWithCategory().stream()
+        User currentUser = getCurrentUser();
+        
+        if (debug) {
+            System.out.println("⏱️ Step 1 - getCurrentUser(): " + (System.currentTimeMillis() - step1) + "ms");
+            step2 = System.currentTimeMillis();
+        }
+        
+        List<Product> products;
+        if (hasRole(currentUser, "ADMIN")) {
+            products = productRepository.findAllWithCategory();
+        } else {
+            products = productRepository.findAllActiveWithCategory();
+        }
+        
+        if (debug) {
+            System.out.println("⏱️ Step 2 - findAllWithCategory(): " + (System.currentTimeMillis() - step2) + "ms");
+            System.out.println("📦 Products found: " + products.size());
+            step3 = System.currentTimeMillis();
+        }
+        
+        List<ProductResponseDTO> result = products.stream()
                 .map(productMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        
+        if (debug) {
+            System.out.println("⏱️ Step 3 - mapping to DTO: " + (System.currentTimeMillis() - step3) + "ms");
+            System.out.println("⏱️ TOTAL findAll(): " + (System.currentTimeMillis() - totalStart) + "ms");
+            System.out.println("🔍 ========== PRODUCTS FINDALL END ==========\n");
+        }
+        
+        return result;
     }
 
     @Override

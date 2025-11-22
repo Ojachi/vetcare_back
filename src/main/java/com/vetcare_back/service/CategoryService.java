@@ -50,9 +50,25 @@ public class CategoryService {
     }
 
     public List<CategoryResponseDTO> findAll() {
-        return categoryRepository.findByActiveTrue().stream()
+        boolean debug = "true".equals(System.getenv("DEBUG_PERFORMANCE"));
+        long start = 0;
+        
+        if (debug) {
+            System.out.println("\n🔍 ========== CATEGORIES FINDALL START ==========");
+            start = System.currentTimeMillis();
+        }
+        
+        List<CategoryResponseDTO> result = categoryRepository.findByActiveTrue().stream()
                 .map(CategoryResponseDTO::fromEntity)
                 .collect(Collectors.toList());
+        
+        if (debug) {
+            System.out.println("⏱️ TOTAL findAll(): " + (System.currentTimeMillis() - start) + "ms");
+            System.out.println("📦 Categories found: " + result.size());
+            System.out.println("🔍 ========== CATEGORIES FINDALL END ==========\n");
+        }
+        
+        return result;
     }
 
     public CategoryResponseDTO update(Long id, CategoryDTO dto) {
