@@ -8,8 +8,12 @@ import lombok.Data;
 public class PetResponseDTO {
     private Long id;
     private String name;
-    private String species;
-    private String breed;
+    private Long speciesId;
+    private String speciesName;
+    private String customSpecies;
+    private Long breedId;
+    private String breedName;
+    private String customBreed;
     private int age;
     private Double weight;
     private String sex;

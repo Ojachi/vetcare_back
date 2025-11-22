@@ -6,7 +6,9 @@ import lombok.*;
 @Entity
 @Table(name = "pets",
     indexes = {
-        @Index(name = "idx_pets_owner", columnList = "owner_id")
+        @Index(name = "idx_pets_owner", columnList = "owner_id"),
+        @Index(name = "idx_pets_species", columnList = "species_id"),
+        @Index(name = "idx_pets_breed", columnList = "breed_id")
     })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Pet {
@@ -18,11 +20,19 @@ public class Pet {
     @Column(nullable = false, length = 120)
     private String name;
 
-    @Column(nullable = false)
-    private String species;    // Especie
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "species_id")
+    private Species species;
 
-    @Column(nullable = false, length = 120)
-    private String breed;      // Raza
+    @Column(length = 100)
+    private String customSpecies;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "breed_id")
+    private Breed breed;
+
+    @Column(length = 120)
+    private String customBreed;
 
     private int age;
     private Double weight;

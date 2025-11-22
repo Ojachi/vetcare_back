@@ -44,7 +44,7 @@ public class HuggingFaceService {
                     return new ResponseWithSource(response, "AI", model);
                 }
             } catch (Exception e) {
-                log.warn("Model {} failed: {}", model, e.getMessage());
+                log.warn("Model {} failed: {}", model, e.getMessage(), e);
             }
             
             // Rotar al siguiente modelo

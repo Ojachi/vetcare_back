@@ -65,15 +65,22 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public List<ProductResponseDTO> findAll() {
-        return productRepository.findAll().stream()
-                .filter(Product::getActive)
+        User currentUser = getCurrentUser();
+        
+        if (hasRole(currentUser, "ADMIN")) {
+            return productRepository.findAllWithCategory().stream()
+                    .map(productMapper::toResponseDTO)
+                    .collect(Collectors.toList());
+        }
+        
+        return productRepository.findAllActiveWithCategory().stream()
                 .map(productMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<ProductResponseDTO> findByCategory(Long categoryId) {
-        return productRepository.findByCategoryIdAndActiveTrue(categoryId).stream()
+        return productRepository.findByCategoryIdAndActiveTrueWithCategory(categoryId).stream()
                 .map(productMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -162,7 +169,7 @@ public class ProductServiceImpl implements IProductService {
                 }
                 String data = base64.split(",")[1];
                 Base64.getDecoder().decode(data);
-            } catch (Exception e) {
+            } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Invalid Base64 string", e);
             }
         }

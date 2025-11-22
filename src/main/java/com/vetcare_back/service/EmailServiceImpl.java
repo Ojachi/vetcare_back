@@ -54,7 +54,7 @@ public class EmailServiceImpl implements IEmailService {
         } catch (IOException e) {
             System.err.println("Error sending OTP email: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("Failed to send email. Please try again later.");
+            throw new RuntimeException("Failed to send email. Please try again later.", e);
         }
     }
 

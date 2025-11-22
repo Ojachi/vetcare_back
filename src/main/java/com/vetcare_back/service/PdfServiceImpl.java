@@ -22,10 +22,8 @@ public class PdfServiceImpl implements IPdfService {
 
     @Override
     public byte[] generateDiagnosisPdf(DiagnosisResponseDTO diagnosis) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        
-        try {
-            PdfWriter writer = new PdfWriter(baos);
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             PdfWriter writer = new PdfWriter(baos)) {
             PdfDocument pdf = new PdfDocument(writer);
             Document document = new Document(pdf);
             
@@ -54,8 +52,8 @@ public class PdfServiceImpl implements IPdfService {
             addFooter(document);
             
             document.close();
+            pdf.close();
             return baos.toByteArray();
-            
         } catch (Exception e) {
             throw new RuntimeException("Error generating PDF: " + e.getMessage(), e);
         }

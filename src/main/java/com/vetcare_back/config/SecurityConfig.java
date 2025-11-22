@@ -63,6 +63,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
                         .requestMatchers("/api/categories/**").hasRole("ADMIN")
 
+                        // Species and Breeds - público para consultar
+                        .requestMatchers(HttpMethod.GET, "/api/species", "/api/species/**").permitAll()
+                        .requestMatchers("/api/species/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/breeds", "/api/breeds/**").permitAll()
+                        .requestMatchers("/api/breeds/**").hasRole("ADMIN")
+
                         // Chat endpoints - público
                         .requestMatchers("/api/chat/**").permitAll()
 

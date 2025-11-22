@@ -43,7 +43,7 @@ public class Product {
     @Builder.Default
     private Boolean active = true;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private ProductCategory category;
 }

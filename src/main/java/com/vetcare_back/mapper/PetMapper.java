@@ -13,18 +13,19 @@ public interface PetMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "owner", ignore = true)
     @Mapping(target = "active", ignore = true)
+    @Mapping(target = "species", ignore = true)
+    @Mapping(target = "breed", ignore = true)
     Pet toEntity(PetDTO dto);
 
-    @Mapping(source = "id", target = "id")
-    @Mapping(source = "name", target = "name")
-    @Mapping(source = "species", target = "species")
-    @Mapping(source = "breed", target = "breed")
-    @Mapping(source = "age", target = "age")
-    @Mapping(source = "weight", target = "weight")
-    @Mapping(source = "sex", target = "sex")
-    @Mapping(source = "owner", target = "owner")
-    @Mapping(source = "active", target = "active")
+    @Mapping(source = "species.id", target = "speciesId")
+    @Mapping(source = "species.name", target = "speciesName")
+    @Mapping(source = "breed.id", target = "breedId")
+    @Mapping(source = "breed.name", target = "breedName")
     PetResponseDTO toResponseDTO(Pet pet);
 
+    @Mapping(target = "species", ignore = true)
+    @Mapping(target = "breed", ignore = true)
+    @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "active", ignore = true)
     void updateEntity(PetDTO dto, @MappingTarget Pet pet);
 }

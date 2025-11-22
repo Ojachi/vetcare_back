@@ -28,13 +28,51 @@ public class PetServiceImpl implements IPetService{
     private final AppointmentRepository appointmentRepository;
     private final DiagnosisRepository diagnosisRepository;
 
+    private final SpeciesRepository speciesRepository;
+    private final BreedRepository breedRepository;
+
     public PetServiceImpl(PetRepository petRepository, UserRepository userRepository, PetMapper petMapper,
-                          AppointmentRepository appointmentRepository, DiagnosisRepository diagnosisRepository) {
+                          AppointmentRepository appointmentRepository, DiagnosisRepository diagnosisRepository,
+                          SpeciesRepository speciesRepository, BreedRepository breedRepository) {
         this.petRepository = petRepository;
         this.userRepository = userRepository;
         this.petMapper = petMapper;
         this.appointmentRepository = appointmentRepository;
         this.diagnosisRepository = diagnosisRepository;
+        this.speciesRepository = speciesRepository;
+        this.breedRepository = breedRepository;
+    }
+
+    private void validateSpeciesAndBreedInput(PetDTO dto) {
+        if ((dto.getSpeciesId() == null && dto.getCustomSpecies() == null) ||
+            (dto.getSpeciesId() != null && dto.getCustomSpecies() != null)) {
+            throw new IllegalArgumentException("Provide either speciesId or customSpecies, not both");
+        }
+        
+        if ((dto.getBreedId() == null && dto.getCustomBreed() == null) ||
+            (dto.getBreedId() != null && dto.getCustomBreed() != null)) {
+            throw new IllegalArgumentException("Provide either breedId or customBreed, not both");
+        }
+        
+        if (dto.getCustomSpecies() != null && dto.getBreedId() != null) {
+            throw new IllegalArgumentException("Cannot use breedId with customSpecies. Use customBreed instead");
+        }
+    }
+    
+    private void setSpeciesAndBreed(Pet pet, PetDTO dto, Species species, Breed breed) {
+        if (dto.getSpeciesId() != null) {
+            pet.setSpecies(species);
+            pet.setCustomSpecies(null);
+        } else {
+            pet.setSpecies(null);
+        }
+        
+        if (dto.getBreedId() != null) {
+            pet.setBreed(breed);
+            pet.setCustomBreed(null);
+        } else {
+            pet.setBreed(null);
+        }
     }
 
     @Override
@@ -58,10 +96,36 @@ public class PetServiceImpl implements IPetService{
             throw new SecurityException("Unauthorized to create pet");
         }
 
+        validateSpeciesAndBreedInput(dto);
+
         Pet pet = petMapper.toEntity(dto);
         pet.setOwner(owner);
+        
+        Species species = null;
+        Breed breed = null;
+        
+        if (dto.getSpeciesId() != null) {
+            species = speciesRepository.findById(dto.getSpeciesId())
+                    .orElseThrow(() -> new EntityNotFoundException("Species not found"));
+            if (!species.getActive()) {
+                throw new IllegalStateException("Species is not active");
+            }
+        }
+        
+        if (dto.getBreedId() != null) {
+            breed = breedRepository.findById(dto.getBreedId())
+                    .orElseThrow(() -> new EntityNotFoundException("Breed not found"));
+            if (!breed.getActive()) {
+                throw new IllegalStateException("Breed is not active");
+            }
+            if (species != null && breed.getSpecies() != null && !breed.getSpecies().getId().equals(species.getId())) {
+                throw new IllegalStateException("Breed does not belong to the selected species");
+            }
+        }
+        
+        setSpeciesAndBreed(pet, dto, species, breed);
         pet.setActive(true);
-        pet =  petRepository.save(pet);
+        pet = petRepository.save(pet);
         return petMapper.toResponseDTO(pet);
     }
 
@@ -74,7 +138,33 @@ public class PetServiceImpl implements IPetService{
             throw new SecurityException("Unauthorized to update this pet");
         }
 
+        validateSpeciesAndBreedInput(dto);
+
+        Species species = null;
+        Breed breed = null;
+        
+        if (dto.getSpeciesId() != null) {
+            species = speciesRepository.findById(dto.getSpeciesId())
+                    .orElseThrow(() -> new EntityNotFoundException("Species not found"));
+            if (!species.getActive()) {
+                throw new IllegalStateException("Species is not active");
+            }
+        }
+        
+        if (dto.getBreedId() != null) {
+            breed = breedRepository.findById(dto.getBreedId())
+                    .orElseThrow(() -> new EntityNotFoundException("Breed not found"));
+            if (!breed.getActive()) {
+                throw new IllegalStateException("Breed is not active");
+            }
+            if (species != null && breed.getSpecies() != null && !breed.getSpecies().getId().equals(species.getId())) {
+                throw new IllegalStateException("Breed does not belong to the selected species");
+            }
+        }
+
         petMapper.updateEntity(dto, pet);
+        setSpeciesAndBreed(pet, dto, species, breed);
+        
         pet = petRepository.save(pet);
         return petMapper.toResponseDTO(pet);
     }

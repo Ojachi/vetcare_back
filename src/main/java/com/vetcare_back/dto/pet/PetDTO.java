@@ -5,22 +5,33 @@ import lombok.Data;
 
 @Data
 public class PetDTO {
-    @NotNull(message = "Name is required")
+    @NotBlank(message = "Name is required")
+    @Size(max = 120, message = "Name must be less than 120 characters")
+    @Pattern(regexp = "^[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\\s]*$", message = "Name must start with uppercase letter")
     private String name;
 
-    @NotNull(message = "specie is required")
-    private String species;
+    private Long speciesId;
 
-    @NotNull(message = "breed is required")
-    private String breed;
+    @Size(max = 100, message = "Custom species must be less than 100 characters")
+    @Pattern(regexp = "^[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\\s]*$", message = "Custom species must start with uppercase letter")
+    private String customSpecies;
 
-    @Positive(message = "Age must be positive")
+    private Long breedId;
+
+    @Size(max = 120, message = "Custom breed must be less than 120 characters")
+    @Pattern(regexp = "^[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\\s()]*$", message = "Custom breed must start with uppercase letter")
+    private String customBreed;
+
+    @Min(value = 0, message = "Age cannot be negative")
+    @Max(value = 100, message = "Age must be less than 100")
     private int age;
 
     @Positive(message = "Weight must be positive")
+    @Max(value = 1000, message = "Weight must be less than 1000 kg")
     private Double weight;
 
-    @NotNull(message = "Sex is required")
+    @NotBlank(message = "Sex is required")
+    @Pattern(regexp = "^(Macho|Hembra)$", message = "Sex must be 'Macho' or 'Hembra'")
     private String sex;
 
     private Long ownerId;
