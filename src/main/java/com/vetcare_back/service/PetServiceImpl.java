@@ -104,6 +104,7 @@ public class PetServiceImpl implements IPetService{
 
         Pet pet = petMapper.toEntity(dto);
         pet.setOwner(owner);
+        normalizeNames(pet);
         
         Species species = null;
         Breed breed = null;
@@ -121,6 +122,9 @@ public class PetServiceImpl implements IPetService{
                     .orElseThrow(() -> new EntityNotFoundException("Breed not found"));
             if (!breed.getActive()) {
                 throw new IllegalStateException("Breed is not active");
+            }
+            if (breed.getSpecies() != null && !breed.getSpecies().getActive()) {
+                throw new IllegalStateException("Species associated with this breed is not active");
             }
             if (species != null && breed.getSpecies() != null && !breed.getSpecies().getId().equals(species.getId())) {
                 throw new IllegalStateException("Breed does not belong to the selected species");
@@ -161,13 +165,25 @@ public class PetServiceImpl implements IPetService{
             if (!breed.getActive()) {
                 throw new IllegalStateException("Breed is not active");
             }
+            if (breed.getSpecies() != null && !breed.getSpecies().getActive()) {
+                throw new IllegalStateException("Species associated with this breed is not active");
+            }
             if (species != null && breed.getSpecies() != null && !breed.getSpecies().getId().equals(species.getId())) {
+                throw new IllegalStateException("Breed does not belong to the selected species");
+            }
+        }
+
+        Species finalSpecies = species != null ? species : pet.getSpecies();
+        Breed finalBreed = breed != null ? breed : pet.getBreed();
+        if (finalSpecies != null && finalBreed != null && finalBreed.getSpecies() != null) {
+            if (!finalBreed.getSpecies().getId().equals(finalSpecies.getId())) {
                 throw new IllegalStateException("Breed does not belong to the selected species");
             }
         }
 
         petMapper.updateEntity(dto, pet);
         setSpeciesAndBreed(pet, dto, species, breed);
+        normalizeNames(pet);
         
         pet = petRepository.save(pet);
         return petMapper.toResponseDTO(pet);
@@ -293,5 +309,22 @@ public class PetServiceImpl implements IPetService{
         return SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_" + role));
+    }
+
+    private void normalizeNames(Pet pet) {
+        if (pet.getName() != null && !pet.getName().isEmpty()) {
+            pet.setName(capitalize(pet.getName()));
+        }
+        if (pet.getCustomSpecies() != null && !pet.getCustomSpecies().isEmpty()) {
+            pet.setCustomSpecies(capitalize(pet.getCustomSpecies()));
+        }
+        if (pet.getCustomBreed() != null && !pet.getCustomBreed().isEmpty()) {
+            pet.setCustomBreed(capitalize(pet.getCustomBreed()));
+        }
+    }
+
+    private String capitalize(String text) {
+        text = text.trim();
+        return text.substring(0, 1).toUpperCase() + text.substring(1).toLowerCase();
     }
 }

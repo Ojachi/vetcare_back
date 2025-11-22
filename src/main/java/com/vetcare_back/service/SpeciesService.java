@@ -5,6 +5,7 @@ import com.vetcare_back.dto.species.SpeciesResponseDTO;
 import com.vetcare_back.entity.Species;
 import com.vetcare_back.repository.SpeciesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,13 @@ public class SpeciesService {
     @Autowired
     private SpeciesRepository speciesRepository;
 
+    @Autowired
+    private BreedRepository breedRepository;
+
     public SpeciesResponseDTO createSpecies(SpeciesDTO dto) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can create species");
+        }
         if (speciesRepository.existsByName(dto.getName())) {
             throw new RuntimeException("Species with name '" + dto.getName() + "' already exists");
         }
@@ -32,6 +39,9 @@ public class SpeciesService {
     }
 
     public SpeciesResponseDTO updateSpecies(Long id, SpeciesDTO dto) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can update species");
+        }
         Species species = speciesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Species not found"));
 
@@ -45,12 +55,21 @@ public class SpeciesService {
     }
 
     public void deleteSpecies(Long id) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can delete species");
+        }
         Species species = speciesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Species not found"));
 
         Long petCount = speciesRepository.countActivePetsBySpeciesId(id);
-        if (petCount > 0) {
-            throw new RuntimeException("Cannot delete species with " + petCount + " active pet(s) associated");
+        
+        Long breedPetCount = breedRepository.findBySpeciesIdAndActiveTrue(id).stream()
+                .mapToLong(breed -> breedRepository.countActivePetsByBreedId(breed.getId()))
+                .sum();
+        
+        Long totalPetCount = petCount + breedPetCount;
+        if (totalPetCount > 0) {
+            throw new RuntimeException("Cannot delete species with " + totalPetCount + " active pet(s) associated");
         }
 
         species.setActive(false);
@@ -58,6 +77,9 @@ public class SpeciesService {
     }
 
     public void activateSpecies(Long id) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can activate species");
+        }
         Species species = speciesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Species not found"));
 
@@ -81,5 +103,11 @@ public class SpeciesService {
         return speciesRepository.findAll().stream()
                 .map(SpeciesResponseDTO::fromEntity)
                 .toList();
+    }
+
+    private boolean hasRole(String role) {
+        return SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_" + role));
     }
 }

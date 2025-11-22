@@ -7,19 +7,16 @@ import lombok.Data;
 public class PetDTO {
     @NotBlank(message = "Name is required")
     @Size(max = 120, message = "Name must be less than 120 characters")
-    @Pattern(regexp = "^[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\\s]*$", message = "Name must start with uppercase letter")
     private String name;
 
     private Long speciesId;
 
     @Size(max = 100, message = "Custom species must be less than 100 characters")
-    @Pattern(regexp = "^[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\\s]*$", message = "Custom species must start with uppercase letter")
     private String customSpecies;
 
     private Long breedId;
 
     @Size(max = 120, message = "Custom breed must be less than 120 characters")
-    @Pattern(regexp = "^[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ\\s()]*$", message = "Custom breed must start with uppercase letter")
     private String customBreed;
 
     @Min(value = 0, message = "Age cannot be negative")

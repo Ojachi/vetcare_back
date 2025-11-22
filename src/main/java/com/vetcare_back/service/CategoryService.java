@@ -8,6 +8,7 @@ import com.vetcare_back.repository.ProductCategoryRepository;
 import com.vetcare_back.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,9 @@ public class CategoryService {
     private ProductRepository productRepository;
 
     public CategoryResponseDTO create(CategoryDTO dto) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can create categories");
+        }
         if (categoryRepository.existsByNameAndActiveTrue(dto.getName())) {
             throw new IllegalArgumentException("Category with name '" + dto.getName() + "' already exists");
         }
@@ -52,6 +56,9 @@ public class CategoryService {
     }
 
     public CategoryResponseDTO update(Long id, CategoryDTO dto) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can update categories");
+        }
         ProductCategory category = categoryRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new EntityNotFoundException("Category not found or inactive"));
 
@@ -68,6 +75,9 @@ public class CategoryService {
     }
 
     public void delete(Long id) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can delete categories");
+        }
         ProductCategory category = categoryRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new EntityNotFoundException("Category not found or inactive"));
 
@@ -77,5 +87,11 @@ public class CategoryService {
 
         category.setActive(false);
         categoryRepository.save(category);
+    }
+
+    private boolean hasRole(String role) {
+        return SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_" + role));
     }
 }

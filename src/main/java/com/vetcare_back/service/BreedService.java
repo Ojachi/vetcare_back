@@ -7,6 +7,7 @@ import com.vetcare_back.entity.Species;
 import com.vetcare_back.repository.BreedRepository;
 import com.vetcare_back.repository.SpeciesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,9 @@ public class BreedService {
     private SpeciesRepository speciesRepository;
 
     public BreedResponseDTO createBreed(BreedDTO dto) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can create breeds");
+        }
         Species species = speciesRepository.findById(dto.getSpeciesId())
                 .orElseThrow(() -> new RuntimeException("Species not found"));
 
@@ -45,6 +49,9 @@ public class BreedService {
     }
 
     public BreedResponseDTO updateBreed(Long id, BreedDTO dto) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can update breeds");
+        }
         Breed breed = breedRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Breed not found"));
 
@@ -68,6 +75,9 @@ public class BreedService {
     }
 
     public void deleteBreed(Long id) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can delete breeds");
+        }
         Breed breed = breedRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Breed not found"));
 
@@ -81,6 +91,9 @@ public class BreedService {
     }
 
     public void activateBreed(Long id) {
+        if (!hasRole("ADMIN")) {
+            throw new SecurityException("Only admins can activate breeds");
+        }
         Breed breed = breedRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Breed not found"));
 
@@ -114,5 +127,11 @@ public class BreedService {
         return breedRepository.findAll().stream()
                 .map(BreedResponseDTO::fromEntity)
                 .toList();
+    }
+
+    private boolean hasRole(String role) {
+        return SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_" + role));
     }
 }
