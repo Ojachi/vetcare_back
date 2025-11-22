@@ -96,8 +96,10 @@ public class PdfServiceImpl implements IPdfService {
         
         var pet = diagnosis.getAppointment().getPet();
         addTableRow(table, "Nombre:", pet.getName());
-        addTableRow(table, "Especie:", pet.getSpecies());
-        addTableRow(table, "Raza:", pet.getBreed());
+        String species = pet.getSpeciesName() != null ? pet.getSpeciesName() : pet.getCustomSpecies();
+        String breed = pet.getBreedName() != null ? pet.getBreedName() : pet.getCustomBreed();
+        addTableRow(table, "Especie:", species);
+        addTableRow(table, "Raza:", breed);
         addTableRow(table, "Edad:", pet.getAge() + " años");
         if (pet.getWeight() != null) {
             addTableRow(table, "Peso:", pet.getWeight() + " kg");
