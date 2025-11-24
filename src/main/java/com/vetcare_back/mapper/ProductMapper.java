@@ -14,6 +14,7 @@ public interface ProductMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "category", ignore = true)
+    @Mapping(target = "image", ignore = true)
     Product toEntity(ProductDTO dto);
 
     @Mapping(target = "categoryId", source = "category.id")
@@ -23,5 +24,6 @@ public interface ProductMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "category", ignore = true)
+    @Mapping(target = "image", ignore = true)
     void updateEntity(ProductDTO dto, @MappingTarget Product product);
 }

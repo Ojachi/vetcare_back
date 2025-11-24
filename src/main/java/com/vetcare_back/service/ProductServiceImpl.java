@@ -13,8 +13,8 @@ import com.vetcare_back.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,30 +25,38 @@ public class ProductServiceImpl implements IProductService {
     private final UserRepository userRepository;
     private final ProductMapper productMapper;
     private final ProductCategoryRepository categoryRepository;
+    private final CloudinaryService cloudinaryService;
 
-    public ProductServiceImpl(ProductRepository productRepository, UserRepository userRepository, ProductMapper productMapper, ProductCategoryRepository categoryRepository) {
+    public ProductServiceImpl(ProductRepository productRepository, UserRepository userRepository, ProductMapper productMapper, ProductCategoryRepository categoryRepository, CloudinaryService cloudinaryService) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.productMapper = productMapper;
         this.categoryRepository = categoryRepository;
+        this.cloudinaryService = cloudinaryService;
     }
 
     @Override
-    public ProductResponseDTO create(ProductDTO dto) {
+    public ProductResponseDTO create(ProductDTO dto, MultipartFile image) {
         User currentUser = getCurrentUser();
 
-        // Solo ADMIN puede crear
         if (!hasRole(currentUser, "ADMIN")) {
             throw new SecurityException("Only admins can create products");
         }
-
-        validateBase64(dto.getImage());
 
         Product product = productMapper.toEntity(dto);
         
         if (dto.getCategoryId() != null) {
             product.setCategory(categoryRepository.findByIdAndActiveTrue(dto.getCategoryId())
                     .orElseThrow(() -> new EntityNotFoundException("Category not found or inactive")));
+        }
+
+        if (image != null && !image.isEmpty()) {
+            try {
+                String imageUrl = cloudinaryService.uploadImage(image, "vetcare/products");
+                product.setImage(imageUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Error uploading image", e);
+            }
         }
         
         product = productRepository.save(product);
@@ -131,10 +139,9 @@ public class ProductServiceImpl implements IProductService {
     }
 
     @Override
-    public ProductResponseDTO update(Long id, ProductDTO dto) {
+    public ProductResponseDTO update(Long id, ProductDTO dto, MultipartFile image) {
         User currentUser = getCurrentUser();
 
-        // Solo ADMIN puede actualizar
         if (!hasRole(currentUser, "ADMIN")) {
             throw new SecurityException("Only admins can update products");
         }
@@ -143,9 +150,7 @@ public class ProductServiceImpl implements IProductService {
                 .filter(Product::getActive)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found or inactive"));
 
-        if (dto.getImage() != null) {
-            validateBase64(dto.getImage());
-        }
+        String oldImageUrl = product.getImage();
 
         productMapper.updateEntity(dto, product);
         
@@ -155,8 +160,27 @@ public class ProductServiceImpl implements IProductService {
         } else {
             product.setCategory(null);
         }
+
+        if (image != null && !image.isEmpty()) {
+            try {
+                String newImageUrl = cloudinaryService.uploadImage(image, "vetcare/products");
+                product.setImage(newImageUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Error uploading image", e);
+            }
+        }
         
         product = productRepository.save(product);
+        
+        // Eliminar imagen anterior solo después del commit exitoso
+        if (image != null && !image.isEmpty() && oldImageUrl != null) {
+            try {
+                cloudinaryService.deleteImage(oldImageUrl);
+            } catch (Exception e) {
+                // Log error pero no falla la operación
+                System.err.println("Warning: Failed to delete old image from Cloudinary: " + e.getMessage());
+            }
+        }
         return productMapper.toResponseDTO(product);
     }
 
@@ -183,7 +207,6 @@ public class ProductServiceImpl implements IProductService {
     public void delete(Long id) {
         User currentUser = getCurrentUser();
 
-        // Solo ADMIN puede eliminar (soft delete)
         if (!hasRole(currentUser, "ADMIN")) {
             throw new SecurityException("Only admins can delete products");
         }
@@ -194,6 +217,16 @@ public class ProductServiceImpl implements IProductService {
 
         product.setActive(false);
         productRepository.save(product);
+        
+        // Eliminar imagen de Cloudinary después del commit
+        if (product.getImage() != null) {
+            try {
+                cloudinaryService.deleteImage(product.getImage());
+            } catch (Exception e) {
+                // Log error pero no falla la operación
+                System.err.println("Warning: Failed to delete image from Cloudinary: " + e.getMessage());
+            }
+        }
     }
 
     private User getCurrentUser() {
@@ -204,19 +237,5 @@ public class ProductServiceImpl implements IProductService {
 
     private boolean hasRole(User user, String roleName) {
         return user.getRole() != null && user.getRole().name().equals(roleName.toUpperCase());
-    }
-
-    private void validateBase64(String base64) {
-        if (base64 != null && !base64.isEmpty()) {
-            try {
-                if (!base64.matches("^data:image/(png|jpeg|jpg);base64,[A-Za-z0-9+/=]+$")) {
-                    throw new IllegalArgumentException("Invalid Base64 image format");
-                }
-                String data = base64.split(",")[1];
-                Base64.getDecoder().decode(data);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid Base64 string", e);
-            }
-        }
     }
 }
