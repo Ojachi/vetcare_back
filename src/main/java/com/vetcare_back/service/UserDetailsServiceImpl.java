@@ -1,13 +1,12 @@
-package com.vetcare_back.config;
+package com.vetcare_back.service;
 
 import com.vetcare_back.entity.User;
 import com.vetcare_back.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collections;
 
