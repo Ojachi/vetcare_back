@@ -23,6 +23,7 @@ public interface PetMapper {
     @Mapping(source = "breed.name", target = "breedName")
     PetResponseDTO toResponseDTO(Pet pet);
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "species", ignore = true)
     @Mapping(target = "breed", ignore = true)
     @Mapping(target = "owner", ignore = true)

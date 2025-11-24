@@ -23,6 +23,7 @@ public interface AppointmentMapper {
     @Mapping(target = "createAt", ignore = true)
     Appointment toEntity(AppointmentDTO dto);
 
+    @Mapping(source = "scheduledBy", target = "scheduleBy")
     AppointmentResponseDTO toResponseDTO(Appointment appointment);
 
     @Mapping(target = "id", ignore = true)
