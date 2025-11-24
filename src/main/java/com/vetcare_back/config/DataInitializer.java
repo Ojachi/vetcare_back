@@ -39,5 +39,21 @@ public class DataInitializer {
         } else {
             System.out.println("Admin user already exists: " + adminEmail);
         }
+        String consumidorEmail = "consumidor.final@sistema.local";
+        if (userRepository.findByEmail(consumidorEmail).isEmpty()) {
+            User consumidorFinal = User.builder()
+                    .name("Consumidor Final")
+                    .email(consumidorEmail)
+                    .password(passwordEncoder.encode("NoAccesible222222222222"))
+                    .phone("222222222222")
+                    .address("N/A")
+                    .role(Role.OWNER)
+                    .active(false)
+                    .build();
+            userRepository.save(consumidorFinal);
+            System.out.println("✅ Consumidor Final (222222222222) created");
+        } else {
+            System.out.println("ℹ️  Consumidor Final already exists");
+        }
     }
 }
