@@ -17,4 +17,5 @@ public interface IUserService {
     UserResponseDTO getByEmail(String email);
     List<UserResponseDTO> listAll();
     List<UserResponseDTO> listProfessionals();
+    List<UserResponseDTO> getOwnersForSale();
 }

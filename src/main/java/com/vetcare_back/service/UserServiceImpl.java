@@ -161,6 +161,18 @@ public class UserServiceImpl implements IUserService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<UserResponseDTO> getOwnersForSale() {
+        if(!hasRole("ADMIN") && !hasRole("EMPLOYEE")) {
+            throw new SecurityException("Only admins and employees can access this endpoint");
+        }
+        return userRepository.findAll().stream()
+                .filter(user -> user.getRole() == com.vetcare_back.entity.Role.OWNER && 
+                        (user.getActive() || user.getEmail().equals("consumidor.final@sistema.local")))
+                .map(userMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     private boolean hasRole(String role) {
         return SecurityContextHolder.getContext().getAuthentication()
                 .getAuthorities().stream()

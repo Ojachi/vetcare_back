@@ -48,4 +48,9 @@ public class AdminController {
         userService.delete(id);
         return ResponseEntity.ok("User deleted");
     }
+
+    @GetMapping("/users/owners-for-sale")
+    public ResponseEntity<List<UserResponseDTO>> getOwnersForSale(){
+        return ResponseEntity.ok(userService.getOwnersForSale());
+    }
 }
