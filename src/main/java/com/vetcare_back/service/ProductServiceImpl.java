@@ -73,9 +73,29 @@ public class ProductServiceImpl implements IProductService {
             start = System.currentTimeMillis();
         }
         
-        Product product = productRepository.findById(id)
-                .filter(Product::getActive)
-                .orElseThrow(() -> new EntityNotFoundException("Product not found or inactive"));
+        // Verificar si el usuario está autenticado
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isAuthenticated = !"anonymousUser".equals(currentEmail);
+        
+        Product product;
+        if (isAuthenticated) {
+            User currentUser = userRepository.findByEmail(currentEmail).orElse(null);
+            if (currentUser != null && hasRole(currentUser, "ADMIN")) {
+                // Admin puede ver productos inactivos
+                product = productRepository.findById(id)
+                        .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+            } else {
+                // Usuario autenticado - solo productos activos
+                product = productRepository.findById(id)
+                        .filter(Product::getActive)
+                        .orElseThrow(() -> new EntityNotFoundException("Product not found or inactive"));
+            }
+        } else {
+            // Usuario no autenticado - solo productos activos
+            product = productRepository.findById(id)
+                    .filter(Product::getActive)
+                    .orElseThrow(() -> new EntityNotFoundException("Product not found or inactive"));
+        }
         
         ProductResponseDTO result = productMapper.toResponseDTO(product);
         
@@ -90,7 +110,7 @@ public class ProductServiceImpl implements IProductService {
     @Override
     public List<ProductResponseDTO> findAll() {
         boolean debug = "true".equals(System.getenv("DEBUG_PERFORMANCE"));
-        long totalStart = 0, step1 = 0, step2 = 0, step3 = 0;
+        long totalStart = 0, step1 = 0, step2 = 0;
         
         if (debug) {
             System.out.println("\n🔍 ========== PRODUCTS FINDALL START ==========");
@@ -98,24 +118,27 @@ public class ProductServiceImpl implements IProductService {
             step1 = System.currentTimeMillis();
         }
         
-        User currentUser = getCurrentUser();
-        
-        if (debug) {
-            System.out.println("⏱️ Step 1 - getCurrentUser(): " + (System.currentTimeMillis() - step1) + "ms");
-            step2 = System.currentTimeMillis();
-        }
+        // Verificar si el usuario está autenticado
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isAuthenticated = !"anonymousUser".equals(currentEmail);
         
         List<Product> products;
-        if (hasRole(currentUser, "ADMIN")) {
-            products = productRepository.findAllWithCategory();
+        if (isAuthenticated) {
+            User currentUser = userRepository.findByEmail(currentEmail).orElse(null);
+            if (currentUser != null && hasRole(currentUser, "ADMIN")) {
+                products = productRepository.findAllWithCategory();
+            } else {
+                products = productRepository.findAllActiveWithCategory();
+            }
         } else {
+            // Usuario no autenticado - solo productos activos
             products = productRepository.findAllActiveWithCategory();
         }
         
         if (debug) {
-            System.out.println("⏱️ Step 2 - findAllWithCategory(): " + (System.currentTimeMillis() - step2) + "ms");
+            System.out.println("⏱️ Step 1 - findAllWithCategory(): " + (System.currentTimeMillis() - step1) + "ms");
             System.out.println("📦 Products found: " + products.size());
-            step3 = System.currentTimeMillis();
+            step2 = System.currentTimeMillis();
         }
         
         List<ProductResponseDTO> result = products.stream()
@@ -123,7 +146,7 @@ public class ProductServiceImpl implements IProductService {
                 .collect(Collectors.toList());
         
         if (debug) {
-            System.out.println("⏱️ Step 3 - mapping to DTO: " + (System.currentTimeMillis() - step3) + "ms");
+            System.out.println("⏱️ Step 2 - mapping to DTO: " + (System.currentTimeMillis() - step2) + "ms");
             System.out.println("⏱️ TOTAL findAll(): " + (System.currentTimeMillis() - totalStart) + "ms");
             System.out.println("🔍 ========== PRODUCTS FINDALL END ==========\n");
         }
