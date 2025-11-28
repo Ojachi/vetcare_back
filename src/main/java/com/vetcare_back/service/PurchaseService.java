@@ -244,6 +244,11 @@ public class PurchaseService {
             throw new RuntimeException("Solo se pueden registrar ventas para clientes (OWNER)");
         }
 
+        // Validar que el usuario esté activo O sea el consumidor final
+        if (!targetUser.getActive() && !targetUser.getEmail().equals("consumidor.final@sistema.local")) {
+            throw new RuntimeException("Solo se pueden registrar ventas para usuarios activos o el consumidor final");
+        }
+
         for (ManualPurchaseItemDTO itemDto : dto.getItems()) {
             Product product = productRepository.findById(itemDto.getProductId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + itemDto.getProductId()));
